@@ -1,3 +1,6 @@
+
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -38,23 +41,24 @@
         .agent-card { background: #1a1a20; border: 1px solid #333; padding: 8px; margin-bottom: 6px; border-radius: 4px; display: flex; align-items: center; gap: 8px; font-size: 0.75rem; color: white; cursor: pointer; }
         .agent-card.selected-agent { border-color: var(--accent); box-shadow: 0 0 10px var(--accent); }
         .algo-picker { background: #000; color: #fff; border: 1px solid #444; font-size: 0.65rem; padding: 4px; border-radius: 3px; flex: 1; outline: none; }
-
+        
         /* Sim */
         #sim { display: none; height: 100%; flex-direction: column; background: #000; overflow: hidden; }
         .top-bar { padding: calc(var(--safe-top) + 5px) 5px 5px; display: flex; gap: 4px; background: var(--surface); border-bottom: 1px solid var(--border); }
         .stat { background: #000; padding: 8px 4px; border: 1px solid var(--border); border-radius: 4px; font-size: 9px; font-weight: 800; text-align: center; flex: 1; cursor: pointer; }
         #canvas-wrap { flex: 1; width: 100%; position: relative; background: #000; overflow: hidden; }
         canvas#world { position: absolute; top: 0; left: 0; width: 100%; height: 100%; image-rendering: pixelated; }
-        .boards { padding: 8px; display: grid; gap: 6px; background: var(--surface); border-top: 1px solid var(--border); flex-shrink: 0; height: 160px; }
+        .spawn-indicator { position: absolute; width: 60px; height: 60px; border: 2px solid rgba(255,255,255,0.15); border-radius: 4px; pointer-events: none; display: flex; align-items: center; justify-content: center; font-size: 8px; font-weight: bold; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 1px; }
+        .boards { padding: 8px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; background: var(--surface); border-top: 1px solid var(--border); flex-shrink: 0; height: 160px; }
         .panel { background: #000; border: 1px solid var(--border); padding: 8px; border-radius: 6px; height: 100%; overflow-y: auto; }
         .p-title { font-size: 0.5rem; color: var(--accent); margin-bottom: 6px; font-weight: bold; border-bottom: 1px solid #222; position: sticky; top: 0; background: #000; padding-bottom: 2px; text-transform: uppercase; }
         .entry { display: flex; justify-content: space-between; align-items: center; font-size: 0.55rem; margin-bottom: 4px; }
         .swatch { width: 7px; height: 7px; border-radius: 1px; display: inline-block; }
-
+        
         /* Overlays & Modals */
         .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 200; padding: 20px; align-items: center; justify-content: center; }
         .modal { background: var(--surface); border: 1px solid var(--accent); padding: 25px; border-radius: 12px; width: 100%; max-width: 420px; box-shadow: 0 0 30px rgba(0,242,255,0.2); display: flex; flex-direction: column; }
-
+        
         /* Reuse */
         .reuse-opt { background: #000; border: 1px solid #333; padding: 10px 12px; border-radius: 6px; font-size: 0.7rem; color: var(--dim); transition: all 0.15s; display: flex; align-items: flex-start; gap: 10px; }
         .reuse-opt.active { border-color: var(--accent); color: var(--accent); background: rgba(0,242,255,0.05); }
@@ -63,7 +67,7 @@
         .reuse-opt .ro-label { font-weight:800; font-size:0.65rem; display:block; text-transform:uppercase; letter-spacing:0.5px; }
         .reuse-opt .ro-desc { font-size:0.6rem; opacity:0.6; margin-top:1px; display:block; }
         .reuse-warn { color:var(--danger); font-size:0.6rem; margin-top:4px; display:none; }
-
+        
         /* Duel Styles */
         .duel-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 15px 0; }
         .duel-row { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 6px; margin-bottom: 5px; }
@@ -98,7 +102,7 @@
         .tag-survived { background:rgba(46,213,115,0.18); color:#2ed573; }
         .ban-hint { font-size:0.58rem; color:var(--dim); text-align:center; max-width:300px; line-height:1.5; align-self: center; }
         .ban-hint strong { color:#fff; }
-
+        
         /* Result block */
         .ban-result-wrap { display:none; flex-direction:column; align-items:center; gap:10px; width:100%; max-width:360px; align-self: center; }
         .ban-result-box { background:#000; border:2px solid #2ed573; border-radius:10px; padding:18px 20px; text-align:center; width:100%; }
@@ -175,13 +179,16 @@
         <div class="ban-eyebrow">The Selection Duel</div>
         <div class="ban-headline">NUMBER BATTLE</div>
         <div class="ban-sub">Your numbers vs the AI's will determine the match constraints.</div>
+        
         <div class="duel-inputs">
             <div class="group"><label>Pick 1-10 (Teams)</label><input type="number" id="duel-p1" min="1" max="10" value="5"></div>
             <div class="group"><label>Pick 1-20 (Sim)</label><input type="number" id="duel-p2" min="1" max="20" value="10"></div>
         </div>
+
         <div id="duel-reveal" style="display:none;">
             <div class="duel-row"><span>AI Team Pick (1-10):</span> <span class="duel-val" id="duel-ai1">--</span></div>
             <div class="duel-row"><span>AI Sim Pick (1-20):</span> <span class="duel-val" id="duel-ai2">--</span></div>
+            
             <div class="duel-result-box">
                 <div class="ban-result-eyebrow" style="color:#2ed573;">Battle Constraints Locked</div>
                 <div class="entry"><span>Teams Per Side (Avg floor):</span> <strong id="res-teams">--</strong></div>
@@ -189,6 +196,7 @@
                 <div class="entry"><span>Seconds Per Round (Max):</span> <strong id="res-sec">--</strong></div>
             </div>
         </div>
+
         <button class="btn" id="duel-btn" onclick="runNumberDuel()">LOCK IN NUMBERS</button>
         <button class="btn" id="duel-proceed" style="display:none; background:#2ed573;" onclick="proceedToVsConfig()">PROCEED TO CONFIG →</button>
     </div>
@@ -202,12 +210,12 @@
         <div class="stat" onclick="finishGame()">EXIT</div>
     </div>
     <div id="canvas-wrap"><canvas id="world"></canvas></div>
-    <div class="boards" id="boards-container" style="grid-template-columns:1fr 1fr;">
-        <div class="panel"><div class="p-title">Logic</div><div id="agent-board"></div></div>
-        <div class="panel" id="team-panel" style="display:none"><div class="p-title">Teams</div><div id="team-board"></div></div>
-        <div class="panel" id="legacy-ffa-panel"><div class="p-title">Legacy</div><div id="legacy-ffa-board"></div></div>
-        <div class="panel" id="legacy-team-panel" style="display:none"><div class="p-title">Dynasty</div><div id="legacy-team-board"></div></div>
-    </div>
+    <div class="boards" id="boards-container">
+    <div class="panel"><div class="p-title">Logic</div><div id="agent-board"></div></div>
+    <div class="panel" id="team-panel" style="display:none"><div class="p-title">Teams</div><div id="team-board"></div></div>
+    <div class="panel" id="legacy-ffa-panel"><div class="p-title">Legacy</div><div id="legacy-ffa-board"></div></div>
+    <div class="panel" id="legacy-team-panel" style="display:none"><div class="p-title">Dynasty</div><div id="legacy-team-board"></div></div>
+</div>
 </div>
 
 <div id="end-screen">
@@ -238,6 +246,7 @@
         <div class="ban-eyebrow">Pre-Battle Protocol</div>
         <div class="ban-headline" id="ban-headline">BAN PHASE</div>
         <div class="ban-sub" id="ban-sub">Each side bans one reuse rule. The surviving option is enforced for the draft.</div>
+
         <div class="ban-status-row">
             <div class="ban-status-box player-box">
                 <div class="ban-status-label">◈ Your Ban</div>
@@ -248,8 +257,10 @@
                 <div class="ban-status-val" id="ban-ai-val" style="color:var(--dim);">—</div>
             </div>
         </div>
+
         <div class="ban-cards" id="ban-cards-list"></div>
         <div class="ban-hint" id="ban-hint">Tap a card to <strong>ban</strong> that reuse mode from the battle.</div>
+
         <div class="ban-result-wrap" id="ban-result-wrap">
             <div class="ban-result-box fade-up">
                 <div class="ban-result-eyebrow">⚡ Active Reuse Mode</div>
@@ -265,11 +276,13 @@
 <div id="vs-modal" class="overlay">
     <div class="modal" style="max-height:90vh;overflow-y:auto;">
         <h3 style="margin:0 0 15px 0;color:var(--accent);font-size:0.8rem;">VS AI CONFIG</h3>
+        
         <div class="duel-row" style="background:#000; border:1px solid #222;">
             <div class="group" style="margin:0;"><label>Teams Per Side</label><div class="duel-val" id="disp-vs-teams">--</div></div>
             <div class="group" style="margin:0;"><label>Agents/Team</label><div class="duel-val" id="disp-vs-agents">--</div></div>
             <div class="group" style="margin:0;"><label>Sec/Round</label><div class="duel-val" id="disp-vs-round">--</div></div>
         </div>
+
         <div class="group" style="margin-top:14px;">
             <label>Active Algorithm Reuse (Locked via Ban Phase)</label>
             <div class="reuse-opt active" style="cursor:default; margin-top:4px;">
@@ -278,10 +291,12 @@
             </div>
             <div class="reuse-warn" id="reuse-warn">⚠ With no-reuse, teams × agents per side cannot exceed 12.</div>
         </div>
+
         <div id="pos-map-group" class="group" style="margin-top:14px;display:none;">
             <label>Spawn Zones (5-team tactical mode)</label>
             <div class="pos-map" id="pos-map-preview"></div>
         </div>
+        
         <div style="display:flex;gap:8px;margin-top:16px;">
             <button class="btn btn-sm btn-outline" style="flex:1;" onclick="location.reload()">CANCEL</button>
             <button class="btn btn-sm" style="flex:2;" onclick="runCoinFlip()" id="vs-start-btn">FLIP FOR FIRST PICK</button>
@@ -296,8 +311,7 @@
     </div>
 </div>
 
-</div>
-<script>
+</div><script>
 const COLORS=['#00f2ff','#ff4757','#2ed573','#eccc68','#ffa502','#ff6b81','#70a1ff','#5352ed','#1e90ff','#ff7f50','#a29bfe','#fab1a0','#ff00ff','#ffffff','#7cfc00','#ffd700'];
 const SPAWN_ZONES=[{label:'BL',xFrac:.1,yFrac:.9},{label:'BR',xFrac:.9,yFrac:.9},{label:'TR',xFrac:.9,yFrac:.1},{label:'TL',xFrac:.1,yFrac:.1},{label:'CTR',xFrac:.5,yFrac:.5}];
 const ALGOS=["Q-Learning","Double DQN","SARSA","Gen Evolution","Scorched Earth","Cannibal","Policy Gradient","Actor-Critic","Greedy Territory","Wall Hugger","Momentum Agent","Parasite"];
@@ -310,9 +324,8 @@ const REUSE_MODES={
 let grid=[],agents=[],gen=1,timer=15,isRunning=false,lastTime=0,roundDuration=15;
 let historyData={},selectedAgentEl=null;
 let vsMode=false,vsTeamCount=0;
-let isFFA=true;
 let resolvedReuseMode='free';
-let duelData={teams:1,agents:3,seconds:15};
+let duelData = { teams: 1, agents: 3, seconds: 15 };
 let draftConfig={teamsPerSide:1,agentsPerTeam:3,turn:'player',reuse:'free'};
 let draftData={player:[],ai:[]};
 let draftSlots=[];
@@ -345,39 +358,15 @@ function randomizeTeams(){const t=parseInt(document.getElementById('team-count')
 function randomizeAlgos(){document.querySelectorAll('#setup .algo-picker').forEach(p=>p.selectedIndex=Math.floor(Math.random()*ALGOS.length));}
 function randomizeAll(){randomizeTeams();randomizeAlgos();}
 
-// ─── MODE DETECTION ──────────────────────────────────────────────────────────
-function checkFFA(){
-    const pop=parseInt(document.getElementById('pop').value)||12;
-    const tCount=parseInt(document.getElementById('team-count').value)||12;
-    isFFA=(pop===tCount);
-}
-
-function configurePanels(){
-    const teamPanel=document.getElementById('team-panel');
-    const ffaPanel=document.getElementById('legacy-ffa-panel');
-    const teamLegPanel=document.getElementById('legacy-team-panel');
-    const boards=document.getElementById('boards-container');
-    if(!isFFA){
-        teamPanel.style.display='block';
-        ffaPanel.style.display='none';
-        teamLegPanel.style.display='block';
-        boards.style.gridTemplateColumns='1fr 1fr 1fr 1fr';
-    } else {
-        teamPanel.style.display='none';
-        ffaPanel.style.display='block';
-        teamLegPanel.style.display='none';
-        boards.style.gridTemplateColumns='1fr 1fr';
-    }
-}
-
 // ─── VS CONFIG ───────────────────────────────────────────────────────────────
 function onVsConfigChange(){
-    const teams=duelData.teams;
+    const teams = duelData.teams;
+    const agts = duelData.agents;
     const warn=document.getElementById('reuse-warn');
     const btn=document.getElementById('vs-start-btn');
     document.getElementById('pos-map-group').style.display=teams===5?'block':'none';
     if(teams===5)renderPosMap();
-    const bad=resolvedReuseMode==='none'&&teams*duelData.agents>ALGOS.length;
+    const bad=resolvedReuseMode==='none'&&teams*agts>ALGOS.length;
     warn.style.display=bad?'block':'none';btn.disabled=bad;btn.style.opacity=bad?'0.4':'1';
 }
 function renderPosMap(){
@@ -390,29 +379,43 @@ function renderPosMap(){
         map.appendChild(d);
     });
 }
-function openVSAI(){initBanPhase();}
+function openVSAI(){
+    initBanPhase();
+}
 
 // ─── NUMBER DUEL ─────────────────────────────────────────────────────────────
-function initNumberDuel(){
+function initNumberDuel() {
     document.getElementById('ban-screen').style.display='none';
     document.getElementById('duel-screen').style.display='flex';
 }
+
 function runNumberDuel(){
-    const p1=parseInt(document.getElementById('duel-p1').value);
-    const p2=parseInt(document.getElementById('duel-p2').value);
-    const ai1=8,ai2=15;
-    const finalTeams=Math.max(1,Math.floor((p1+ai1)/2));
-    const finalAgents=Math.min(p2,ai2);
-    const finalSeconds=Math.max(p2,ai2);
-    duelData={teams:finalTeams,agents:finalAgents,seconds:finalSeconds};
-    document.getElementById('duel-ai1').innerText=ai1;
-    document.getElementById('duel-ai2').innerText=ai2;
-    document.getElementById('res-teams').innerText=finalTeams;
-    document.getElementById('res-agents').innerText=finalAgents;
-    document.getElementById('res-sec').innerText=finalSeconds+'s';
-    document.getElementById('duel-reveal').style.display='block';
-    document.getElementById('duel-btn').style.display='none';
-    document.getElementById('duel-proceed').style.display='block';
+    const p1 = parseInt(document.getElementById('duel-p1').value);
+    const p2 = parseInt(document.getElementById('duel-p2').value);
+
+    const ai1 = Math.floor(Math.random() * 10) + 1;
+    const ai2 = Math.floor(Math.random() * 20) + 1;
+
+    const finalTeams = Math.max(1, Math.floor((p1 + ai1) / 2));
+    let finalAgents = Math.min(p2, ai2);
+
+    // Cap: teams × agents per side cannot exceed 25
+    if (finalTeams * finalAgents > 25) {
+        finalAgents = Math.max(1, Math.floor(25 / finalTeams));
+    }
+
+    const finalSeconds = Math.max(p2, ai2);
+    duelData = { teams: finalTeams, agents: finalAgents, seconds: finalSeconds };
+
+    document.getElementById('duel-ai1').innerText = ai1;
+    document.getElementById('duel-ai2').innerText = ai2;
+    document.getElementById('res-teams').innerText = finalTeams;
+    document.getElementById('res-agents').innerText = finalAgents;
+    document.getElementById('res-sec').innerText = finalSeconds + 's';
+
+    document.getElementById('duel-reveal').style.display = 'block';
+    document.getElementById('duel-btn').style.display = 'none';
+    document.getElementById('duel-proceed').style.display = 'block';
 }
 
 // ─── COIN FLIP ───────────────────────────────────────────────────────────────
@@ -446,10 +449,11 @@ function initBanPhase(){
     document.getElementById('ban-result-wrap').style.display='none';
     buildBanCards();
     setTimeout(()=>{
-        banState.aiBan=(Math.random()<0.5?'none':(Math.random()<0.5?'free':'team'));
+        banState.aiBan= (Math.random() < 0.5 ? 'none' : (Math.random() < 0.5 ? 'free' : 'team'));
         document.getElementById('ban-ai-val').innerHTML='<span class="thinking" style="color:#555;">thinking</span>';
     },500);
 }
+
 function buildBanCards(){
     const c=document.getElementById('ban-cards-list');c.innerHTML='';
     Object.values(REUSE_MODES).forEach(mode=>{
@@ -460,13 +464,15 @@ function buildBanCards(){
         c.appendChild(card);
     });
 }
+
 function playerBan(key){
     if(banState.playerBan)return;
     banState.playerBan=key;
     document.getElementById('ban-player-val').innerText=REUSE_MODES[key].short;
     document.getElementById(`ban-card-${key}`).classList.add('player-banned');
-    setTimeout(revealAIBan,1000);
+    setTimeout(revealAIBan, 1000);
 }
+
 function revealAIBan(){
     const aKey=banState.aiBan;
     document.getElementById('ban-ai-val').innerText=REUSE_MODES[aKey].short;
@@ -474,13 +480,14 @@ function revealAIBan(){
     if(aKey===banState.playerBan){
         aCard.classList.add('both-banned');
         const others=Object.keys(REUSE_MODES).filter(k=>k!==aKey);
-        banState.resolved=others[Math.floor(Math.random()*others.length)];
+        banState.resolved = others[Math.floor(Math.random()*others.length)];
     } else {
         aCard.classList.add('ai-banned');
-        banState.resolved=Object.keys(REUSE_MODES).find(k=>k!==banState.playerBan&&k!==aKey);
+        banState.resolved = Object.keys(REUSE_MODES).find(k=>k!==banState.playerBan && k!==aKey);
     }
     showBanResult(banState.resolved);
 }
+
 function showBanResult(key){
     resolvedReuseMode=key;
     const mode=REUSE_MODES[key];
@@ -488,29 +495,34 @@ function showBanResult(key){
     document.getElementById('ban-result-desc').innerText=mode.desc;
     document.getElementById('ban-result-wrap').style.display='flex';
 }
+
 function proceedToVsConfig(){
     document.getElementById('duel-screen').style.display='none';
     document.getElementById('vs-modal').style.display='flex';
-    document.getElementById('locked-reuse-name').innerText=REUSE_MODES[resolvedReuseMode].name;
-    document.getElementById('locked-reuse-desc').innerText=REUSE_MODES[resolvedReuseMode].desc;
-    document.getElementById('disp-vs-teams').innerText=duelData.teams;
-    document.getElementById('disp-vs-agents').innerText=duelData.agents;
-    document.getElementById('disp-vs-round').innerText=duelData.seconds+'s';
+    
+    document.getElementById('locked-reuse-name').innerText = REUSE_MODES[resolvedReuseMode].name;
+    document.getElementById('locked-reuse-desc').innerText = REUSE_MODES[resolvedReuseMode].desc;
+    
+    document.getElementById('disp-vs-teams').innerText = duelData.teams;
+    document.getElementById('disp-vs-agents').innerText = duelData.agents;
+    document.getElementById('disp-vs-round').innerText = duelData.seconds + "s";
+    
     onVsConfigChange();
 }
 
 // ─── DRAFT SCREEN ────────────────────────────────────────────────────────────
 function initDraftScreen(){
     document.getElementById('draft-screen').style.display='flex';
-    draftConfig.teamsPerSide=duelData.teams;
-    draftConfig.agentsPerTeam=duelData.agents;
-    draftConfig.reuse=resolvedReuseMode;
-    roundDuration=duelData.seconds;
+    draftConfig.teamsPerSide = duelData.teams;
+    draftConfig.agentsPerTeam = duelData.agents;
+    draftConfig.reuse = resolvedReuseMode;
+    roundDuration = duelData.seconds;
     draftData={player:[],ai:[]};draftSlots=[];
     document.getElementById('active-mode-badge').innerText=`⚡ REUSE MODE: ${REUSE_MODES[resolvedReuseMode].name.toUpperCase()}`;
     buildDraftSlots();buildDraftPool();updateTurnUI();
     if(draftConfig.turn==='ai')setTimeout(aiPick,800);
 }
+
 function buildDraftSlots(){
     const cont=document.getElementById('draft-sides-container');cont.innerHTML='';
     ['player','ai'].forEach(side=>{
@@ -536,6 +548,7 @@ function buildDraftSlots(){
         cont.appendChild(sd);
     });
 }
+
 function buildDraftPool(){
     const pool=document.getElementById('draft-pool');pool.innerHTML='';
     ALGOS.forEach(algo=>{
@@ -549,9 +562,11 @@ function buildDraftPool(){
     });
     refreshPoolState();
 }
-function getTeamColor(side,idx){
-    return side==='player'?'#1e90ff':'#ff4757';
+
+function getTeamColor(side, idx) {
+    return side === 'player' ? '#1e90ff' : '#ff4757';
 }
+
 function isAlgoAvailable(algo){return isAlgoAvailableForSide(algo,draftConfig.turn);}
 function isAlgoAvailableForSide(algo,side){
     if(draftConfig.reuse==='free')return true;
@@ -563,13 +578,16 @@ function isAlgoAvailableForSide(algo,side){
     }
     return true;
 }
+
 function refreshPoolState(){
     ALGOS.forEach(algo=>{
         const chip=document.getElementById(`chip-${algo.replace(/\s+/g,'-')}`);if(!chip)return;
         chip.classList.toggle('used',draftConfig.turn!=='player'||!isAlgoAvailable(algo));
     });
 }
+
 function getNextOpenSlot(side){return draftSlots.find(s=>s.side===side&&!s.el.classList.contains('filled'))||null;}
+
 function handleDrop(slotEl,algo){
     const side=slotEl.dataset.side,teamIdx=parseInt(slotEl.dataset.team);
     if(side!==draftConfig.turn||!isAlgoAvailableForSide(algo,side)||slotEl.classList.contains('filled'))return;
@@ -580,35 +598,39 @@ function handleDrop(slotEl,algo){
     updateTurnUI();refreshPoolState();
     if(draftConfig.turn==='ai')setTimeout(aiPick,700);
 }
+
 function fillSlot(slotEl,algo,side,teamIdx){
     const col=getTeamColor(side,teamIdx);
     slotEl.innerHTML=`<span style="color:${col};font-weight:800;font-size:0.65rem;">${algo}</span>`;
     slotEl.classList.add('filled',`${side}-slot`);
 }
+
 function updateTurnUI(){
     const b=document.getElementById('turn-banner-header'),l=document.getElementById('turn-label');
     b.className=`turn-banner ${draftConfig.turn}`;
     l.innerText=draftConfig.turn==='player'?"PLAYER'S PICK":'AI IS PICKING...';
     highlightNextSlot();refreshPoolState();
 }
+
 function highlightNextSlot(){
     draftSlots.forEach(s=>s.el.classList.remove('active-turn'));
     const n=getNextOpenSlot(draftConfig.turn);if(n)n.el.classList.add('active-turn');
 }
+
 function aiPick(){
     const avail=ALGOS.filter(a=>isAlgoAvailableForSide(a,'ai'));
     if(!avail.length)return;
     const algo=avail[Math.floor(Math.random()*avail.length)];
     const ns=getNextOpenSlot('ai');if(!ns)return;
-    handleDrop(ns.el,algo);
+    handleDrop(ns.el, algo);
 }
 
-// ─── BATTLE SIM ──────────────────────────────────────────────────────────────
+// ─── BATTLE SIM ─────────────────────────────────────────────────────────────
 function startDraftedBattle(){
-    agents=[];historyData={};
-    vsMode=true;
-    isFFA=false;
-    vsTeamCount=draftConfig.teamsPerSide*2;
+  
+  document.getElementById('team-panel').style.display = 'block';
+  
+    agents=[];historyData={};vsMode=true;vsTeamCount=draftConfig.teamsPerSide*2;
     let gi=0;
     ['player','ai'].forEach(side=>{
         for(let t=0;t<draftConfig.teamsPerSide;t++){
@@ -622,26 +644,7 @@ function startDraftedBattle(){
     });
     document.getElementById('draft-screen').style.display='none';
     document.getElementById('sim').style.display='flex';
-    configurePanels();
-    resizeCanvas();isRunning=true;startRound();requestAnimationFrame(loop);
-}
-
-function startSim(){
-    checkFFA();
-    agents=[];historyData={};
-    vsMode=false;
-    roundDuration=parseInt(document.getElementById('round-len').value)||15;
-    Array.from(document.querySelectorAll('#setup .team-zone')).filter(z=>z.querySelectorAll('.agent-card').length>0).forEach(zone=>{
-        const tn=zone.querySelector('.zone-title').innerText.trim(),tc=zone.querySelector('.swatch').style.background;
-        zone.querySelectorAll('.agent-card').forEach(card=>{
-            const algo=card.querySelector('.algo-picker').value;
-            if(!historyData[tn])historyData[tn]=[0];
-            agents.push({id:card.querySelector('strong').innerText,color:tc,team:tn,algo,agentKey:tn,active:true,x:0,y:0,totalTiles:0,bestGameTiles:0});
-        });
-    });
-    document.getElementById('setup').style.display='none';
-    document.getElementById('sim').style.display='flex';
-    configurePanels();
+    configurePanels()
     resizeCanvas();isRunning=true;startRound();requestAnimationFrame(loop);
 }
 
@@ -696,130 +699,172 @@ function getCoverage(){
     return c;
 }
 
-function recordWin(key){
-    for(let k in historyData){
-        const lv=historyData[k][historyData[k].length-1];
-        historyData[k].push(k===key?lv+1:lv);
-    }
-    updateUI();
-}
+function updateUI() {
+    document.getElementById('gen-ui').innerText = `GEN ${gen}`;
+    const cov = getCoverage();
 
-function batchSim(gens){
-    for(let g=0;g<gens;g++){
-        const res=8;
-        const cv=document.getElementById('world');
-        grid=Array(Math.floor(cv.width/res)).fill(null).map(()=>Array(Math.floor(cv.height/res)).fill('#000'));
-        agents.forEach(a=>{
-            a.active=true;
-            a.x=Math.floor(Math.random()*grid.length);
-            a.y=Math.floor(Math.random()*grid[0].length);
-        });
-        let steps=0;
-        const maxSteps=2000;
-        while(steps<maxSteps){
-            updateLogic();
-            const activeTeams=[...new Set(agents.filter(a=>a.active).map(a=>a.team))];
-            if(activeTeams.length<=1)break;
-            if(steps%100===99){
-                const cov=getCoverage();
-                const teamScores={};
-                agents.forEach(a=>{if(a.active)teamScores[a.team]=(teamScores[a.team]||0)+(cov[a.color]||0);});
-                const teamsArr=Object.entries(teamScores);
-                if(teamsArr.length>1){
-                    teamsArr.sort((a,b)=>a[1]-b[1]);
-                    const loser=teamsArr[0][0];
-                    agents.forEach(a=>{if(a.team===loser)a.active=false;});
-                }
-            }
-            steps++;
-        }
-        const survivors=[...new Set(agents.filter(a=>a.active).map(a=>a.team))];
-        const winner=survivors[0]||null;
-        if(winner)recordWin(winner);
-        gen++;
-    }
-    render();
-    updateUI();
-    document.getElementById('gen-ui').innerText=`GEN ${gen}`;
-}
-
-function updateUI(){
-    document.getElementById('gen-ui').innerText=`GEN ${gen}`;
-    const cov=getCoverage();
-
-    // Logic board — all modes
-    const agentBoard=document.getElementById('agent-board');
-    agentBoard.innerHTML='';
-    [...agents].sort((a,b)=>(cov[b.color]||0)-(cov[a.color]||0)).forEach(a=>{
-        const tiles=cov[a.color]||0;
-        const row=document.createElement('div');
-        row.className='entry';
-        row.innerHTML=`<span><span class="swatch" style="background:${a.color}"></span> <span style="color:#fff">${a.id} <span style="font-size:0.48rem">${a.algo}</span></span></span><span style="color:${a.active?'#fff':'#444'}">${a.active?tiles:'✗'}</span>`;
+    // --- Logic board (all modes) ---
+    const agentBoard = document.getElementById('agent-board');
+    agentBoard.innerHTML = '';
+    [...agents].sort((a,b) => (cov[b.color]||0) - (cov[a.color]||0)).forEach(a => {
+        const tiles = cov[a.color] || 0;
+        const row = document.createElement('div');
+        row.className = 'entry';
+        row.innerHTML = `<span><span class="swatch" style="background:${a.color}"></span> <span style="color:#fff">${a.id} <span style="font-size:0.48rem">${a.algo}</span></span></span><span style="color:${a.active?'#fff':'#444'}">${a.active ? tiles : '✗'}</span>`;
         agentBoard.appendChild(row);
     });
 
-    // Team board — team mode only
-    if(!isFFA){
-        const teamBoard=document.getElementById('team-board');
-        teamBoard.innerHTML='';
-        const teamTiles={},teamColor={};
-        agents.forEach(a=>{
-            teamTiles[a.team]=(teamTiles[a.team]||0)+(cov[a.color]||0);
-            teamColor[a.team]=a.color;
+    // --- Team board (VS mode only) ---
+    if (vsMode) {
+        const teamBoard = document.getElementById('team-board');
+        teamBoard.innerHTML = '';
+        const teamTiles = {}, teamColor = {};
+        agents.forEach(a => {
+            teamTiles[a.team] = (teamTiles[a.team] || 0) + (cov[a.color] || 0);
+            teamColor[a.team] = a.color;
         });
-        const activeTeams=new Set(agents.filter(a=>a.active).map(a=>a.team));
-        Object.entries(teamTiles).sort((a,b)=>b[1]-a[1]).forEach(([team,tiles])=>{
-            const alive=activeTeams.has(team);
-            const row=document.createElement('div');
-            row.className='entry';
-            row.innerHTML=`<span><span class="swatch" style="background:${teamColor[team]}"></span> <span style="color:#fff">${team}</span></span><span style="color:${alive?'#fff':'#444'}">${alive?tiles:'✗'}</span>`;
+        const activeTeams = new Set(agents.filter(a => a.active).map(a => a.team));
+        Object.entries(teamTiles).sort((a,b) => b[1] - a[1]).forEach(([team, tiles]) => {
+            const alive = activeTeams.has(team);
+            const row = document.createElement('div');
+            row.className = 'entry';
+            row.innerHTML = `<span><span class="swatch" style="background:${teamColor[team]}"></span> <span style="color:#fff">${team}</span></span><span style="color:${alive?'#fff':'#444'}">${alive ? tiles : '✗'}</span>`;
             teamBoard.appendChild(row);
         });
     }
 
-    // Legacy FFA board — algo wins, FFA only
-    if(isFFA){
-        const ffaBoard=document.getElementById('legacy-ffa-board');
-        ffaBoard.innerHTML='';
-        // Map algo → wins + color from the agent that uses it
-        const algoMap={};
-        agents.forEach(a=>{
-            const wins=historyData[a.team]?historyData[a.team][historyData[a.team].length-1]||0:0;
-            if(!algoMap[a.algo]||wins>algoMap[a.algo].wins){
-                algoMap[a.algo]={wins,color:a.color};
-            }
+    // --- Legacy FFA board (algo wins, FFA only) ---
+    if (!vsMode) {
+        const ffaBoard = document.getElementById('legacy-ffa-board');
+        ffaBoard.innerHTML = '';
+        const algoWins = {};
+        agents.forEach(a => {
+            if (!algoWins[a.algo]) algoWins[a.algo] = { wins: 0, color: a.color };
+            algoWins[a.algo].wins = historyData[a.team]?.[historyData[a.team].length - 1] || 0;
         });
-        Object.entries(algoMap).sort((a,b)=>b[1].wins-a[1].wins).forEach(([algo,data])=>{
-            const row=document.createElement('div');
-            row.className='entry';
-            row.innerHTML=`<span><span class="swatch" style="background:${data.color}"></span> <span style="color:#fff">${algo}</span></span><span style="color:${data.wins>0?'var(--accent)':'#555'}">${data.wins}W</span>`;
+        Object.entries(algoWins).sort((a,b) => b[1].wins - a[1].wins).forEach(([algo, data]) => {
+            const row = document.createElement('div');
+            row.className = 'entry';
+            row.innerHTML = `<span><span class="swatch" style="background:${data.color}"></span> <span style="color:#fff">${algo}</span></span><span style="color:${data.wins>0?'var(--accent)':'#555'}">${data.wins}W</span>`;
             ffaBoard.appendChild(row);
         });
     }
 
-    // Dynasty board — team wins, team mode only
-    if(!isFFA){
-        const legTeamBoard=document.getElementById('legacy-team-board');
-        legTeamBoard.innerHTML='';
-        const teamColor={};
-        agents.forEach(a=>teamColor[a.team]=a.color);
-        Object.entries(historyData).sort((a,b)=>(b[1][b[1].length-1]||0)-(a[1][a[1].length-1]||0)).forEach(([team,hist])=>{
-            const wins=hist[hist.length-1]||0;
-            const row=document.createElement('div');
-            row.className='entry';
-            row.innerHTML=`<span><span class="swatch" style="background:${teamColor[team]||'#888'}"></span> <span style="color:#fff">${team}</span></span><span style="color:${wins>0?'var(--accent)':'#555'}">${wins}W</span>`;
+    // --- Legacy Team board (team wins, VS mode only) ---
+    if (vsMode) {
+        const legTeamBoard = document.getElementById('legacy-team-board');
+        legTeamBoard.innerHTML = '';
+        const teamColor = {};
+        agents.forEach(a => teamColor[a.team] = a.color);
+        Object.entries(historyData).sort((a,b) => (b[1][b[1].length-1]||0) - (a[1][a[1].length-1]||0)).forEach(([team, hist]) => {
+            const wins = hist[hist.length - 1] || 0;
+            const row = document.createElement('div');
+            row.className = 'entry';
+            row.innerHTML = `<span><span class="swatch" style="background:${teamColor[team]||'#888'}"></span> <span style="color:#fff">${team}</span></span><span style="color:${wins>0?'var(--accent)':'#555'}">${wins}W</span>`;
             legTeamBoard.appendChild(row);
         });
     }
 }
+function recordWin(key){for(let k in historyData){const lv=historyData[k][historyData[k].length-1];historyData[k].push(k===key?lv+1:lv);}}
+function batchSim(gens) {
+    for (let g = 0; g < gens; g++) {
+        // Reset grid and agents for this round
+        const res = 8;
+        const cv = document.getElementById('world');
+        grid = Array(Math.floor(cv.width / res)).fill(null).map(() =>
+            Array(Math.floor(cv.height / res)).fill('#000')
+        );
+        agents.forEach(a => {
+            a.active = true;
+            a.x = Math.floor(Math.random() * grid.length);
+            a.y = Math.floor(Math.random() * grid[0].length);
+        });
 
+        // Simulate steps until one team remains
+        let steps = 0;
+        const maxSteps = 2000;
+        while (steps < maxSteps) {
+            updateLogic();
+            const activeTeams = [...new Set(agents.filter(a => a.active).map(a => a.team))];
+            if (activeTeams.length <= 1) break;
+
+            // Periodic knockout check (every 100 steps = one "round")
+            if (steps % 100 === 99) {
+                const cov = getCoverage();
+                const teamScores = {};
+                agents.forEach(a => {
+                    if (a.active) teamScores[a.team] = (teamScores[a.team] || 0) + (cov[a.color] || 0);
+                });
+                const teamsArr = Object.entries(teamScores);
+                if (teamsArr.length > 1) {
+                    teamsArr.sort((a, b) => a[1] - b[1]);
+                    const loser = teamsArr[0][0];
+                    agents.forEach(a => { if (a.team === loser) a.active = false; });
+                }
+            }
+            steps++;
+        }
+
+        // Record winner
+        const survivors = [...new Set(agents.filter(a => a.active).map(a => a.team))];
+        const winner = survivors[0] || null;
+        if (winner) recordWin(winner);
+        gen++;
+    }
+
+    // Re-render canvas with final state and refresh UI
+    render();
+    updateUI();
+    document.getElementById('gen-ui').innerText = `GEN ${gen}`;
+}
 function finishGame(){
     isRunning=false;
     document.getElementById('sim').style.display='none';
     document.getElementById('end-screen').style.display='flex';
 }
 
+function startSim(){
+    agents=[];historyData={};vsMode=false;
+    roundDuration=parseInt(document.getElementById('round-len').value)||15;
+    Array.from(document.querySelectorAll('#setup .team-zone')).filter(z=>z.querySelectorAll('.agent-card').length>0).forEach(zone=>{
+        const tn=zone.querySelector('.zone-title').innerText.trim(),tc=zone.querySelector('.swatch').style.background;
+        zone.querySelectorAll('.agent-card').forEach(card=>{
+            const algo=card.querySelector('.algo-picker').value;
+            if(!historyData[tn])historyData[tn]=[0];
+            agents.push({id:card.querySelector('strong').innerText,color:tc,team:tn,algo,agentKey:tn,active:true,x:0,y:0,totalTiles:0,bestGameTiles:0});
+        });
+    });
+    document.getElementById('setup').style.display='none';
+    document.getElementById('sim').style.display='flex';
+    document.getElementById('team-panel').style.display = vsMode ? 'block' : 'none';
+    resizeCanvas();configurePanels();vsMode = false;isRunning=true;startRound();requestAnimationFrame(loop);
+}
+
+function configurePanels() {
+    const teamPanel = document.getElementById('team-panel');
+    const ffaPanel = document.getElementById('legacy-ffa-panel');
+    const teamLegPanel = document.getElementById('legacy-team-panel');
+    const boards = document.getElementById('boards-container');
+
+    if (vsMode) {
+        teamPanel.style.display = 'block';
+        ffaPanel.style.display = 'none';
+        teamLegPanel.style.display = 'block';
+        boards.style.gridTemplateColumns = '1fr 1fr 1fr 1fr';
+    } else {
+        teamPanel.style.display = 'none';
+        ffaPanel.style.display = 'block';
+        teamLegPanel.style.display = 'none';
+        boards.style.gridTemplateColumns = '1fr 1fr';
+    }
+}
 window.onload=initSetup;
 </script>
+</body>
+</html>
+    buildBanCards();
+    setTimeout(()=>{
+        banState.aiBan= (Math.random() < 0.5 ? 'none' : (Math.random() < 0.5 ? 'free' : 'team'));
+        document.getElementById('ban-ai-val').innerHTML='<span class="thinking" style="color:#555;">thinki
 </body>
 </html>
