@@ -862,11 +862,55 @@ function batchSim(gens) {
     document.getElementById('gen-ui').innerText = `GEN ${gen}`;
 }
 
-function finishGame(){
-    isRunning=false;
-    document.getElementById('sim').style.display='none';
-    document.getElementById('end-screen').style.display='flex';
-    renderEndScreen();
+function finishGame() {
+    isRunning = false;
+    document.getElementById('sim').style.display = 'none';
+    const endScreen = document.getElementById('end-screen');
+    const winnerBanner = document.getElementById('winner-banner');
+    endScreen.style.display = 'flex';
+
+    // 1. Aggregate Data
+    let stats = [];
+    if (isFFA) {
+        // Map Algorithm -> Total Wins
+        const algoWins = {};
+        const algoColors = {};
+        agents.forEach(a => {
+            const wins = historyData[a.team] ? historyData[a.team][historyData[a.team].length - 1] : 0;
+            algoWins[a.algo] = (algoWins[a.algo] || 0) + wins;
+            if (!algoColors[a.algo]) algoColors[a.algo] = a.color;
+        });
+        stats = Object.entries(algoWins).map(([name, wins]) => ({ name, wins, color: algoColors[name] }));
+    } else {
+        // Map Team -> Wins
+        stats = Object.entries(historyData).map(([name, hist]) => {
+            const agent = agents.find(a => a.team === name);
+            return { name, wins: hist[hist.length - 1], color: agent ? agent.color : '#888' };
+        });
+    }
+
+    // 2. Sort by wins descending
+    stats.sort((a, b) => b.wins - a.wins);
+
+    // 3. Find Max for scaling bars
+    const maxWins = Math.max(...stats.map(s => s.wins), 1);
+
+    // 4. Build Bar Graph HTML
+    let graphHTML = `<div style="margin-top:20px; display:flex; flex-direction:column; gap:10px;">`;
+    stats.forEach(item => {
+        const width = (item.wins / maxWins) * 100;
+        graphHTML += `
+            <div style="display:flex; align-items:center; gap:10px;">
+                <div style="width:80px; font-size:0.6rem; color:var(--dim); text-overflow:ellipsis; overflow:hidden; white-space:nowrap; text-align:right;">${item.name}</div>
+                <div style="flex:1; background:#1a1a20; height:12px; border-radius:3px; position:relative;">
+                    <div style="width:${width}%; background:${item.color}; height:100%; border-radius:3px; transition: width 1s ease-out;"></div>
+                </div>
+                <div style="width:30px; font-size:0.65rem; font-weight:bold; color:var(--accent);">${item.wins}</div>
+            </div>`;
+    });
+    graphHTML += `</div>`;
+
+    winnerBanner.innerHTML = `<h3>${isFFA ? 'ALGORITHM PERFORMANCE' : 'TEAM PERFORMANCE'}</h3>` + graphHTML;
 }
 
 // ─── END SCREEN & WIN GRAPH ──────────────────────────────────────────────────
