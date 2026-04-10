@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Neural Siege: Mobile Command</title>
+    <title>Neural Siege: Evolution</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
@@ -14,163 +14,86 @@
             --dim: #8b9bb4;
             --danger: #ff4757;
             --border: #1e293b;
-            --safe-top: env(safe-area-inset-top, 10px);
-            --safe-bottom: env(safe-area-inset-bottom, 10px);
+            --safe-top: env(safe-area-inset-top, 0px);
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
         }
 
         * { box-sizing: border-box; font-family: 'Inter', system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
         
-        body { 
-            background: var(--bg); color: var(--text); margin: 0; padding: 0;
-            width: 100vw; height: 100dvh;
-            overflow: hidden; overscroll-behavior-y: none;
-        }
+        body { background: var(--bg); color: var(--text); margin: 0; padding: 0; width: 100vw; height: 100dvh; overflow: hidden; }
+        #app { width: 100%; height: 100%; max-width: 600px; margin: 0 auto; background: var(--surface); display: flex; flex-direction: column; position: relative; }
 
-        #app { 
-            width: 100%; height: 100%; max-width: 600px; margin: 0 auto; 
-            background: var(--surface); position: relative; display: flex; flex-direction: column; 
-        }
-
-        header { 
-            padding: calc(var(--safe-top) + 10px) 15px 15px; 
-            border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; 
-            background: var(--surface); z-index: 30;
-        }
-        h1 { margin: 0; font-size: 0.9rem; letter-spacing: 2px; color: var(--accent); }
-        .help-trigger { background: none; border: 1px solid var(--dim); color: var(--dim); border-radius: 50%; width: 28px; height: 28px; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        #main-header { padding: calc(var(--safe-top) + 15px) 15px 15px; border-bottom: 1px solid var(--border); }
+        h1 { margin: 0; font-size: 0.9rem; letter-spacing: 2px; color: var(--accent); text-align: center;}
 
         .view { flex: 1; padding: 15px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; }
         .group { display: flex; flex-direction: column; gap: 6px; }
-        label { font-size: 0.65rem; text-transform: uppercase; font-weight: 800; color: var(--dim); letter-spacing: 0.5px; }
+        label { font-size: 0.65rem; text-transform: uppercase; font-weight: 800; color: var(--dim); }
         
-        input, select { background: #000; border: 1px solid var(--border); color: #fff; padding: 10px; border-radius: 6px; font-size: 16px; width: 100%; }
-        .config-card { background: #0a0a0f; border: 1px solid #222; padding: 10px; border-radius: 8px; }
-        .btn { background: var(--accent); color: #000; border: none; padding: 16px; font-weight: 900; border-radius: 6px; cursor: pointer; font-size: 0.9rem; transition: 0.2s; }
-        .btn:active { transform: scale(0.97); opacity: 0.8; }
+        input { background: #000; border: 1px solid var(--border); color: #fff; padding: 10px; border-radius: 6px; font-size: 14px; width: 100%; }
+        .btn { background: var(--accent); color: #000; border: none; padding: 16px; font-weight: 900; border-radius: 6px; cursor: pointer; margin-top: 10px; flex-shrink: 0; }
 
-        #sim { display: none; position: absolute; inset: 0; background: #000; z-index: 10; flex-direction: column; }
+        #team-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+        .team-zone { background: rgba(0,0,0,0.3); border: 1px solid var(--border); padding: 8px; min-height: 120px; border-radius: 6px; transition: 0.2s; }
+        .team-zone.drag-over { border-color: var(--accent); background: rgba(0, 242, 255, 0.1); }
+        .zone-title { font-size: 0.6rem; font-weight: bold; margin-bottom: 6px; color: var(--accent); text-transform: uppercase; display: flex; align-items: center; gap: 5px; }
+
+        .agent-card { background: #000; border: 1px solid #222; padding: 6px; margin-bottom: 4px; border-radius: 4px; cursor: grab; display: flex; align-items: center; gap: 6px; font-size: 0.7rem; }
+        .swatch { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+        .algo-picker { background: transparent; color: #fff; border: none; font-size: 0.65rem; flex: 1; outline: none; }
+
+        /* FIXED LAYOUT: Sim Screen */
+        #sim { display: none; height: 100%; flex-direction: column; background: #000; overflow: hidden; }
+        .top-bar { padding: calc(var(--safe-top) + 5px) 5px 5px; display: flex; gap: 4px; background: var(--surface); border-bottom: 1px solid var(--border); flex-shrink: 0; }
+        .stat { background: #000; padding: 8px 4px; border: 1px solid var(--border); border-radius: 4px; font-size: 9px; font-weight: 800; text-align: center; flex: 1; cursor: pointer; }
         
-        /* Floating HUD Style */
-        .sim-controls {
-            padding: calc(var(--safe-top) + 10px) 10px 10px;
-            background: transparent; /* Removed solid background */
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            z-index: 25;
-            flex-shrink: 0;
-            position: absolute;
-            top: 0; width: 100%;
-            pointer-events: none; /* Allows clicks through to canvas if needed, but buttons will override */
-        }
-        .sim-controls > * { pointer-events: auto; }
+        /* Canvas container prevents it from sliding behind other elements */
+        #canvas-wrap { flex: 1; width: 100%; position: relative; background: #000; overflow: hidden; }
+        canvas#world { position: absolute; top: 0; left: 0; width: 100%; height: 100%; image-rendering: pixelated; }
 
-        canvas#world { 
-            width: 100%; 
-            flex: 1 1 auto; 
-            min-height: 0;
-            image-rendering: pixelated; 
-            background: #000;
-        }
+        .boards { padding: 8px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; background: var(--surface); border-top: 1px solid var(--border); flex-shrink: 0; height: 130px; }
+        .panel { background: #000; border: 1px solid var(--border); padding: 8px; border-radius: 6px; height: 100%; overflow-y: auto; }
+        .p-title { font-size: 0.55rem; color: var(--accent); margin-bottom: 4px; font-weight: bold; border-bottom: 1px solid #222; position: sticky; top: 0; background: #000; padding-bottom: 2px; }
+        .entry { display: flex; justify-content: space-between; align-items: center; font-size: 0.6rem; margin-bottom: 3px; }
+        .entry-label { display: flex; align-items: center; gap: 4px; }
 
-        .stat-row { display: flex; gap: 4px; }
-        .stat { background: rgba(0,0,0,0.7); padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 10px; font-weight: 600; white-space: nowrap; backdrop-filter: blur(4px); }
-        .sim-btn { color: var(--accent); cursor: pointer; border: 1px solid var(--accent); background: rgba(0, 242, 255, 0.1); flex: 1; text-align: center; }
-        .end-btn { color: var(--danger); cursor: pointer; border: 1px solid var(--danger); background: rgba(0,0,0,0.7); }
-        
-        .boards { 
-            padding: 8px 8px calc(var(--safe-bottom) + 8px); 
-            display: grid; 
-            grid-template-columns: 1fr 1fr; 
-            gap: 8px; 
-            background: var(--surface); 
-            border-top: 1px solid var(--border);
-            z-index: 25;
-            flex-shrink: 0;
-        }
-        .panel { background: #000; border: 1px solid var(--border); padding: 8px; border-radius: 8px; height: 105px; overflow-y: auto; }
-        .p-title { font-size: 0.55rem; color: var(--accent); margin-bottom: 6px; text-transform: uppercase; border-bottom: 1px solid #222; padding-bottom: 4px; font-weight: bold;}
-        .entry { display: flex; justify-content: space-between; font-size: 0.6rem; margin-bottom: 4px; align-items: center; }
-        .entry i { color: #bbb; flex: 1; margin-left: 6px; font-style: normal; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.55rem;}
-
-        #help-view, #results-view { display: none; position: absolute; inset: 0; background: var(--bg); z-index: 50; padding: calc(var(--safe-top) + 20px) 20px calc(var(--safe-bottom) + 20px); overflow-y: auto; flex-direction: column; }
-        .chart-container { flex: 1; position: relative; width: 100%; min-height: 250px; margin: 20px 0; }
-        .hidden { display: none !important; }
+        #end-screen { display: none; position: absolute; inset: 0; background: var(--bg); z-index: 100; padding: 20px; flex-direction: column; overflow-y: auto;}
     </style>
 </head>
 <body>
 
 <div id="app">
-    <header id="main-header">
-        <h1>NEURAL SIEGE</h1>
-        <button class="help-trigger" onclick="toggleHelp(true)">?</button>
-    </header>
-    
     <div id="setup" class="view">
-        <div class="group">
-            <label>Population (Max 20)</label>
-            <input type="number" id="pop" value="8" min="2" max="20" oninput="drawConfig()">
-        </div>
-        <div class="group">
-            <label>Round Duration (sec)</label>
-            <input type="number" id="round-len" value="15" min="1">
-        </div>
-        <div class="group">
-            <label>Structure</label>
-            <select id="game-mode" onchange="drawConfig()">
-                <option value="ffa">Free For All</option>
-                <option value="teams">Teams</option>
-            </select>
-        </div>
-        <div id="team-ui" class="group hidden">
-            <label>Teams</label>
-            <input type="number" id="team-qty" min="2" value="2" oninput="drawConfig()">
-        </div>
-        
-        <div class="group">
-            <label>Agents</label>
-            <div id="config-list" style="display: flex; flex-direction: column; gap: 8px;"></div>
-        </div>
-        
-        <button class="btn" style="margin-top:20px" onclick="startSim()">ENGAGE SYSTEMS</button>
+        <header id="main-header"><h1>NEURAL SIEGE</h1></header>
+        <div class="group"><label>Population Size</label><input type="number" id="pop" value="8" min="2" max="20" oninput="initSetup()"></div>
+        <div class="group"><label>Round Duration (Sec)</label><input type="number" id="round-len" value="15"></div>
+        <div class="group"><label id="team-label">Amount of Teams</label><input type="number" id="team-count" value="8" min="1" max="20" oninput="initSetup()"></div>
+        <div id="team-grid"></div>
+        <button class="btn" onclick="startSim()">INITIALIZE BATTLE</button>
     </div>
 
     <div id="sim">
-        <div class="sim-controls">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                <div style="display: flex; gap: 6px;">
-                    <div id="gen-ui" class="stat">GEN: 1</div>
-                    <div id="timer-ui" class="stat" style="color:var(--danger)">TIME: 15s</div>
-                </div>
-                <button class="stat end-btn" onclick="endGame()">ABORT SIM</button>
-            </div>
-            <div class="stat-row">
-                <button class="stat sim-btn" onclick="batchSim(5)">+5</button>
-                <button class="stat sim-btn" onclick="batchSim(10)">+10</button>
-                <button class="stat sim-btn" onclick="batchSim(100)">+100</button>
-            </div>
+        <div class="top-bar">
+            <div class="stat" onclick="batchSim(5)" style="color:var(--accent)">+5</div>
+            <div class="stat" onclick="batchSim(10)" style="color:var(--accent)">+10</div>
+            <div class="stat" onclick="batchSim(50)" style="color:var(--accent)">+50</div>
+            <div class="stat" onclick="batchSim(100)" style="color:var(--accent)">+100</div>
+            <div id="timer-ui" class="stat" style="color:var(--danger); flex:1.5">15S</div>
+            <div class="stat" onclick="showEndScreen()" style="color:white; border-color:#444; flex:0.5">X</div>
         </div>
-
-        <canvas id="world" width="36" height="80"></canvas>
-
+        <div id="canvas-wrap">
+            <canvas id="world"></canvas>
+        </div>
         <div class="boards">
-            <div class="panel"><div class="p-title">Live Territory</div><div id="live-board"></div></div>
-            <div class="panel"><div class="p-title">Legacy Wins</div><div id="legacy-board"></div></div>
+            <div class="panel"><div class="p-title">Live Capture</div><div id="live-board"></div></div>
+            <div class="panel"><div class="p-title">Performance</div><div id="legacy-board"></div></div>
         </div>
     </div>
 
-    <div id="help-view">
-        <h2 style="font-size: 1.2rem; margin-top:0; color: var(--accent);">Algorithm Logic</h2>
-        <div id="help-content" style="flex:1; overflow-y:auto; padding-bottom: 20px;"></div>
-        <button class="btn" style="width:100%; margin-top:auto;" onclick="toggleHelp(false)">RETURN</button>
-    </div>
-
-    <div id="results-view">
-        <h2 style="font-size: 1.2rem; margin-top:0; color: var(--accent);">Performance History</h2>
-        <div class="chart-container">
-            <canvas id="chartCanvas"></canvas>
-        </div>
-        <button class="btn" style="width:100%" onclick="resetSim()">NEW SIMULATION</button>
+    <div id="end-screen">
+        <h2 style="color:var(--accent); text-align:center; font-size:0.8rem; letter-spacing:2px">BATTLE ANALYTICS</h2>
+        <div style="flex:1; width:100%; min-height:250px;"><canvas id="winChart"></canvas></div>
+        <button class="btn" onclick="location.reload()">NEW SIMULATION</button>
     </div>
 </div>
 
@@ -178,228 +101,229 @@
     const COLORS = ['#00f2ff', '#ff4757', '#2ed573', '#eccc68', '#ffa502', '#ff6b81', '#70a1ff', '#5352ed', '#1e90ff', '#ff7f50', '#a29bfe', '#fab1a0', '#55efc4', '#81ecec', '#74b9ff', '#ffeaa7', '#ff7675', '#fd79a8', '#636e72', '#b2bec3'];
     const ALGOS = ["Q-Learning", "SARSA", "Double DQN", "Policy Gradient", "Actor-Critic", "Greedy Territory", "Wall Hugger", "Momentum Agent"];
     
-    let grid = [], agents = [], gen = 1, timer = 15;
-    let legacyWins = {}, winHistory = [], colorToAlgoMap = {};
-    let lastTime = 0, animId, isRunning = false;
-    let globalChart = null;
+    let grid = [], agents = [], gen = 1, timer = 15, isRunning = false, lastTime = 0, isFFA = false;
+    let historyData = {}; 
 
-    const DESCRIPTIONS = {
-        "Q-Learning": "Scores space +2 and enemy -1. Builds a memory table of which directions worked.",
-        "SARSA": "Updates strategy based on the move it *actually* makes next.",
-        "Double DQN": "Uses two logic sets to prevent over-optimization.",
-        "Policy Gradient": "Pure probability. High-capture moves become more likely.",
-        "Actor-Critic": "One logic 'acts' while another 'evaluates'.",
-        "Greedy Territory": "Moves to the first empty spot it sees.",
-        "Wall Hugger": "Prioritizes staying near the edges of the map.",
-        "Momentum Agent": "95% chance to keep moving in its current direction."
-    };
-
-    function toggleHelp(show) {
-        if(show) {
-            const container = document.getElementById('help-content');
-            container.innerHTML = ALGOS.map(a => `<div style="margin-bottom:15px; background: rgba(255,255,255,0.03); padding: 10px; border-radius: 6px; border-left: 2px solid var(--accent);"><b style="color:var(--accent); font-size:0.85rem">${a}</b><p style="font-size:0.75rem; color:var(--dim); margin:6px 0 0; line-height: 1.4;">${DESCRIPTIONS[a]}</p></div>`).join('');
+    function initSetup() {
+        const pop = parseInt(document.getElementById('pop').value) || 2;
+        const tCount = parseInt(document.getElementById('team-count').value) || 1;
+        isFFA = (pop === tCount);
+        document.getElementById('team-label').innerText = isFFA ? "Amount of Teams (FFA MODE)" : "Amount of Teams";
+        const gridEl = document.getElementById('team-grid');
+        gridEl.innerHTML = '';
+        
+        for(let i = 0; i < tCount; i++) {
+            const teamColor = COLORS[i % COLORS.length];
+            const zone = document.createElement('div');
+            zone.className = 'team-zone';
+            zone.id = `zone-${i}`;
+            zone.dataset.color = teamColor;
+            zone.innerHTML = `
+                <div class="zone-title"><span class="swatch" style="background:${teamColor}"></span>Team ${i+1}</div>
+                <div class="list" id="list-${i}" style="min-height:80px"></div>
+            `;
+            zone.ondragover = (e) => { e.preventDefault(); zone.classList.add('drag-over'); };
+            zone.ondragleave = () => zone.classList.remove('drag-over');
+            zone.ondrop = (e) => {
+                e.preventDefault();
+                zone.classList.remove('drag-over');
+                document.getElementById(`list-${i}`).appendChild(document.getElementById(e.dataTransfer.getData("text")));
+            };
+            gridEl.appendChild(zone);
         }
-        document.getElementById('help-view').style.display = show ? 'flex' : 'none';
-    }
 
-    function drawConfig() {
-        let popInput = document.getElementById('pop');
-        let pop = parseInt(popInput.value) || 2;
-        if (pop > 20) { pop = 20; popInput.value = 20; }
-        const mode = document.getElementById('game-mode').value;
-        const container = document.getElementById('config-list');
-        const teamUI = document.getElementById('team-ui');
-        container.innerHTML = '';
-        if (mode === 'ffa') {
-            teamUI.classList.add('hidden');
-            for(let i=0; i<pop; i++) createCard(container, `Agent ${i+1}`, i, COLORS[i % COLORS.length], 1, i);
-        } else {
-            teamUI.classList.remove('hidden');
-            const tQty = parseInt(document.getElementById('team-qty').value) || 2;
-            let counts = new Array(tQty).fill(Math.floor(pop/tQty));
-            for(let i=0; i<pop%tQty; i++) counts[i]++;
-            let aIdx = 0;
-            counts.forEach((c, tIdx) => { createCard(container, `Team ${tIdx+1}`, tIdx, COLORS[tIdx % COLORS.length], c, aIdx); aIdx += c; });
+        for(let i = 0; i < pop; i++) {
+            const agentDiv = document.createElement('div');
+            agentDiv.className = 'agent-card';
+            agentDiv.draggable = true;
+            agentDiv.id = `agent-${i}`;
+            agentDiv.ondragstart = (e) => e.dataTransfer.setData("text", agentDiv.id);
+            const algoOpts = ALGOS.map((a, idx) => `<option value="${a}" ${idx === i % ALGOS.length ? 'selected' : ''}>${a}</option>`).join('');
+            agentDiv.innerHTML = `<div style="font-weight:bold">A${i+1}</div><select class="algo-picker">${algoOpts}</select>`;
+            document.getElementById(`list-${i % tCount}`).appendChild(agentDiv);
         }
-    }
-
-    function createCard(container, title, gIdx, color, count, sIdx) {
-        const div = document.createElement('div');
-        div.className = 'config-card';
-        let selects = '';
-        for(let j=0; j<count; j++) {
-            const globalIdx = sIdx + j;
-            const defaultAlgo = globalIdx < 8 ? ALGOS[globalIdx] : ALGOS[0];
-            selects += `<select class="algo-sel" data-group="${gIdx}" style="margin-top:6px; padding: 8px;">
-                ${ALGOS.map(a => `<option value="${a}" ${a===defaultAlgo?'selected':''}>${a}</option>`).join('')}</select>`;
-        }
-        div.innerHTML = `<div style="color:${color}; font-size:0.65rem; font-weight:bold; letter-spacing:1px;">${title}</div>${selects}`;
-        container.appendChild(div);
     }
 
     function startSim() {
-        agents = []; colorToAlgoMap = {}; gen = 1; winHistory = []; legacyWins = {};
-        document.querySelectorAll('.algo-sel').forEach((sel) => {
-            const color = COLORS[sel.dataset.group % COLORS.length];
-            colorToAlgoMap[color] = sel.value;
-            agents.push({
-                color: color, groupIdx: parseInt(sel.dataset.group),
-                type: sel.value, weights: {up: Math.random(), down: Math.random(), left: Math.random(), right: Math.random()}
+        agents = [];
+        historyData = {};
+        document.querySelectorAll('.team-zone').forEach((zone) => {
+            const teamName = zone.querySelector('.zone-title').innerText.trim();
+            const teamColor = zone.dataset.color;
+            historyData[teamName] = [0];
+            zone.querySelectorAll('.agent-card').forEach(card => {
+                agents.push({
+                    color: teamColor,
+                    team: teamName,
+                    algo: card.querySelector('.algo-picker').value,
+                    active: true, x: 0, y: 0, wins: 0
+                });
             });
         });
+
         document.getElementById('setup').style.display = 'none';
         document.getElementById('sim').style.display = 'flex';
+        resizeCanvas();
         isRunning = true;
         startRound();
-        if(!animId) loop(performance.now());
+        requestAnimationFrame(loop);
+    }
+
+    function resizeCanvas() {
+        const c = document.getElementById('world');
+        const wrap = document.getElementById('canvas-wrap');
+        c.width = wrap.clientWidth;
+        c.height = wrap.clientHeight;
     }
 
     function startRound() {
-        grid = Array(36).fill().map(() => Array(80).fill('#000'));
+        const c = document.getElementById('world');
+        const res = 6;
+        grid = Array(Math.floor(c.width/res)).fill().map(() => Array(Math.floor(c.height/res)).fill('#000'));
         timer = parseInt(document.getElementById('round-len').value) || 15;
         agents.forEach(a => {
-            a.x = Math.floor(Math.random()*36); a.y = Math.floor(Math.random()*80);
-            a.active = true; a.lastDir = {x:0, y:1};
+            a.x = Math.floor(Math.random() * grid.length);
+            a.y = Math.floor(Math.random() * grid[0].length);
+            if(a.active) grid[a.x][a.y] = a.color;
         });
-        document.getElementById('gen-ui').innerText = `GEN: ${gen}`;
-        document.getElementById('timer-ui').innerText = `TIME: ${timer}s`;
     }
 
     function loop(now) {
         if (!isRunning) return;
-        if (!lastTime) lastTime = now;
         if (now - lastTime >= 1000) {
             timer--;
-            document.getElementById('timer-ui').innerText = `TIME: ${timer}s`;
+            document.getElementById('timer-ui').innerText = `${timer}S`;
             if (timer <= 0) knockout();
             lastTime = now;
         }
         updateLogic();
         render();
         updateUI();
-        const activeGroups = [...new Set(agents.filter(a => a.active).map(a => a.groupIdx))];
-        if (activeGroups.length <= 1) {
-            recordWin(activeGroups[0]);
+
+        const activeTeams = [...new Set(agents.filter(a => a.active).map(a => a.team))];
+        if (activeTeams.length <= 1) {
+            if(activeTeams.length === 1) recordWin(activeTeams[0]);
             gen++;
-            setTimeout(startRound, 400); 
-            return;
+            startRound();
         }
-        animId = requestAnimationFrame(loop);
+        requestAnimationFrame(loop);
+    }
+
+    function recordWin(teamName) {
+        for(let t in historyData) {
+            let lastVal = historyData[t][historyData[t].length - 1];
+            historyData[t].push(t === teamName ? lastVal + 1 : lastVal);
+        }
+    }
+
+    function batchSim(n) {
+        for(let i=0; i<n; i++) {
+            while([...new Set(agents.filter(a => a.active).map(a => a.team))].length > 1) {
+                updateLogic();
+                if (Math.random() > 0.98) knockout(); 
+            }
+            const winner = agents.find(a => a.active);
+            if(winner) recordWin(winner.team);
+            gen++;
+            startRound();
+        }
     }
 
     function updateLogic() {
+        const gw = grid.length, gh = grid[0].length;
         agents.forEach(a => {
             if (!a.active) return;
-            const moves = [{n:'up',x:0,y:-1},{n:'down',x:0,y:1},{n:'left',x:-1,y:0},{n:'right',x:1,y:0}];
-            let chosen = moves[0];
-            if (a.type === "Greedy Territory") {
-                moves.sort((m1, m2) => {
-                    let nx1 = (a.x+m1.x+36)%36, ny1 = (a.y+m1.y+80)%80;
-                    let nx2 = (a.x+m2.x+36)%36, ny2 = (a.y+m2.y+80)%80;
-                    return (grid[nx1][ny1] === '#000' ? 0 : 1) - (grid[nx2][ny2] === '#000' ? 0 : 1);
-                });
-                chosen = moves[0];
-            } else if (a.type === "Wall Hugger") {
-                moves.sort((m1, m2) => {
-                    let d1 = Math.min(a.x+m1.x, 35-(a.x+m1.x), a.y+m1.y, 79-(a.y+m1.y));
-                    let d2 = Math.min(a.x+m2.x, 35-(a.x+m2.x), a.y+m2.y, 79-(a.y+m2.y));
-                    return d1 - d2;
-                });
-                chosen = moves[0];
-            } else if (a.type === "Momentum Agent") {
-                chosen = Math.random() < 0.95 ? (moves.find(m => m.x === a.lastDir.x && m.y === a.lastDir.y) || moves[0]) : moves[Math.floor(Math.random()*4)];
-            } else {
-                let maxU = -Infinity;
-                moves.forEach(m => {
-                    let nx = (a.x + m.x + 36) % 36, ny = (a.y + m.y + 80) % 80;
-                    let u = a.weights[m.n] + (grid[nx][ny] === '#000' ? 1 : -0.5);
-                    if (a.type === "Double DQN") u += Math.random() * 0.3;
-                    if (u > maxU) { maxU = u; chosen = m; }
-                });
-                a.weights[chosen.n] += (grid[(a.x+chosen.x+36)%36][(a.y+chosen.y+80)%80] === '#000' ? 0.05 : -0.02);
-            }
-            a.x = (a.x + chosen.x + 36) % 36; a.y = (a.y + chosen.y + 80) % 80;
-            a.lastDir = {x: chosen.x, y: chosen.y}; grid[a.x][a.y] = a.color;
+            const dir = Math.floor(Math.random() * 4);
+            if(dir === 0) a.y--; else if(dir === 1) a.y++; else if(dir === 2) a.x--; else a.x++;
+            a.x = (a.x + gw) % gw; a.y = (a.y + gh) % gh;
+            grid[a.x][a.y] = a.color;
         });
     }
 
     function knockout() {
-        const scores = {}; const active = agents.filter(a => a.active);
-        active.forEach(a => scores[a.groupIdx] = 0);
-        grid.flat().forEach(c => { let idx = COLORS.indexOf(c); if(idx !== -1 && scores[idx] !== undefined) scores[idx]++; });
-        const sorted = Object.entries(scores).sort((a,b) => a[1]-b[1]);
-        if(sorted.length > 1) {
-            const loserIdx = parseInt(sorted[0][0]);
-            agents.forEach(a => { if(a.groupIdx === loserIdx) a.active = false; });
-            for(let x=0; x<36; x++) for(let y=0; y<80; y++) if(grid[x][y] === COLORS[loserIdx % COLORS.length]) grid[x][y] = '#000';
+        const counts = {};
+        grid.flat().forEach(c => { if(c !== '#000') counts[c] = (counts[c] || 0) + 1; });
+        const teamCoverage = {};
+        agents.forEach(a => {
+            if(a.active) teamCoverage[a.team] = (teamCoverage[a.team] || 0) + (counts[a.color] || 0);
+        });
+        let lowestVal = Infinity, loserTeam = null;
+        Object.entries(teamCoverage).forEach(([team, score]) => {
+            if(score < lowestVal) { lowestVal = score; loserTeam = team; }
+        });
+        if(loserTeam) {
+            const loserColor = agents.find(a => a.team === loserTeam).color;
+            agents.forEach(a => { if(a.team === loserTeam) a.active = false; });
+            for(let x=0; x<grid.length; x++) {
+                for(let y=0; y<grid[0].length; y++) {
+                    if(grid[x][y] === loserColor) grid[x][y] = '#000';
+                }
+            }
         }
         timer = parseInt(document.getElementById('round-len').value);
     }
 
-    function recordWin(gIdx) {
-        if (gIdx === undefined) return;
-        const color = COLORS[gIdx % COLORS.length]; const algo = colorToAlgoMap[color];
-        legacyWins[algo] = (legacyWins[algo] || 0) + 1;
-        winHistory.push({ gen: gen, algo: algo, color: color });
-    }
-
-    function batchSim(count) {
-        isRunning = false; cancelAnimationFrame(animId); animId = null;
-        for(let i=0; i<count; i++) {
-            startRound(); let roundActive = true; let subT = parseInt(document.getElementById('round-len').value); let ticks = 0;
-            while(roundActive) {
-                updateLogic(); ticks++;
-                if(ticks % 60 === 0) { subT--; if(subT <= 0) { knockout(); subT = parseInt(document.getElementById('round-len').value); } }
-                const ag = [...new Set(agents.filter(a => a.active).map(a => a.groupIdx))];
-                if(ag.length <= 1) { recordWin(ag[0]); gen++; roundActive = false; }
-                if(ticks > 5000) roundActive = false; 
+    function render() {
+        const canvas = document.getElementById('world');
+        const ctx = canvas.getContext('2d');
+        const cw = canvas.width / grid.length, ch = canvas.height / grid[0].length;
+        ctx.fillStyle = '#000'; ctx.fillRect(0,0,canvas.width,canvas.height);
+        for(let x=0; x<grid.length; x++) {
+            for(let y=0; y<grid[0].length; y++) {
+                if(grid[x][y] !== '#000') {
+                    ctx.fillStyle = grid[x][y];
+                    ctx.fillRect(x*cw, y*ch, cw, ch);
+                }
             }
         }
-        isRunning = true; startRound(); lastTime = performance.now(); loop(lastTime);
     }
 
     function updateUI() {
-        const scores = {}; grid.flat().forEach(c => { if(c!=='#000') scores[c] = (scores[c] || 0) + 1; });
-        const list = Object.entries(scores).sort((a,b)=>b[1]-a[1]);
-        document.getElementById('live-board').innerHTML = list.map(([c,v]) => `<div class="entry"><span style="color:${c}">■</span> <i>${colorToAlgoMap[c]}</i> <span>${v}</span></div>`).join('');
-        document.getElementById('legacy-board').innerHTML = Object.entries(legacyWins).sort((a,b)=>b[1]-a[1]).map(([algo,v]) => {
-            const color = Object.keys(colorToAlgoMap).find(c => colorToAlgoMap[c] === algo);
-            return `<div class="entry"><span style="color:${color}">■</span> <i>${algo}</i> <span>${v}</span></div>`;
-        }).join('');
+        const counts = {}; grid.flat().forEach(c => { if(c!=='#000') counts[c] = (counts[c]||0)+1; });
+        const liveEntries = agents.filter(a => a.active).map(a => ({
+            color: a.color, algo: a.algo, score: counts[a.color] || 0
+        })).sort((a,b) => b.score - a.score);
+
+        document.getElementById('live-board').innerHTML = liveEntries.map(e => `
+            <div class="entry"><span class="entry-label"><span class="swatch" style="background:${e.color}"></span><span>${e.algo}</span></span><span>${e.score}</span></div>
+        `).join('');
+
+        const perfData = Object.entries(historyData).map(([name, history]) => ({
+            name, wins: history[history.length-1], color: agents.find(a => a.team === name).color, algo: agents.find(a => a.team === name).algo
+        })).sort((a,b) => b.wins - a.wins);
+
+        document.getElementById('legacy-board').innerHTML = perfData.map(p => `
+            <div class="entry"><span class="entry-label">${isFFA ? `<span class="swatch" style="background:${p.color}"></span><span>${p.algo}</span>` : `<span>${p.name}</span>`}</span><span>${p.wins}</span></div>
+        `).join('');
     }
 
-    function render() {
-        const ctx = document.getElementById('world').getContext('2d');
-        ctx.fillStyle = '#000'; ctx.fillRect(0,0,36,80);
-        for(let x=0; x<36; x++) for(let y=0; y<80; y++) if(grid[x][y]!=='#000') { ctx.fillStyle=grid[x][y]; ctx.fillRect(x,y,1,1); }
-        agents.forEach(a => { if(a.active) { ctx.fillStyle='#fff'; ctx.fillRect(a.x,a.y,1,1); }});
-    }
-
-    function endGame() {
-        isRunning = false; cancelAnimationFrame(animId);
+    function showEndScreen() {
+        isRunning = false;
         document.getElementById('sim').style.display = 'none';
-        document.getElementById('results-view').style.display = 'flex';
-        const ctx = document.getElementById('chartCanvas').getContext('2d');
-        if (globalChart) globalChart.destroy(); 
-        const usedAlgos = [...new Set(winHistory.map(h => h.algo))];
-        const datasets = usedAlgos.map(algoName => {
-            const color = Object.keys(colorToAlgoMap).find(c => colorToAlgoMap[c] === algoName);
-            let cumulative = 0;
-            const dataPoints = winHistory.map(h => { if(h.algo === algoName) cumulative++; return cumulative; });
-            return { label: algoName, data: dataPoints, borderColor: color, tension: 0.1, pointRadius: 0 };
-        });
-        globalChart = new Chart(ctx, { 
-            type: 'line', data: { labels: winHistory.map((_,i)=>i+1), datasets: datasets }, 
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#fff', font: { size: 10 } } } }, scales: { y: { grid: { color: '#222' }, ticks: { color: '#888' } }, x: { grid: { color: '#222' }, ticks: { color: '#888', maxTicksLimit: 10 } } } } 
+        document.getElementById('end-screen').style.display = 'flex';
+        const ctx = document.getElementById('winChart').getContext('2d');
+        const labels = Array.from({length: historyData[Object.keys(historyData)[0]].length}, (_, i) => i);
+        const datasets = Object.keys(historyData).map(teamName => ({
+            label: teamName,
+            data: historyData[teamName],
+            borderColor: agents.find(a => a.team === teamName).color,
+            tension: 0.2, pointRadius: 0
+        }));
+        new Chart(ctx, {
+            type: 'line', data: { labels, datasets },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                scales: { 
+                    x: { ticks: { color: '#888', font: { size: 8 } }, grid: { display: false } },
+                    y: { ticks: { color: '#888', font: { size: 8 } }, grid: { color: '#222' } }
+                },
+                plugins: { legend: { display: !isFFA, labels: { color: '#fff', font: { size: 8 } } } }
+            }
         });
     }
 
-    function resetSim() {
-        document.getElementById('results-view').style.display = 'none';
-        document.getElementById('setup').style.display = 'flex';
-    }
-
-    window.onload = drawConfig;
+    window.onload = initSetup;
+    window.onresize = resizeCanvas;
 </script>
 </body>
 </html>
