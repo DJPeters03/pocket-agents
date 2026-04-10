@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Neural Siege: 10-Algo Evolution</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>Neural Siege: Adaptive Intelligence</title>
     <style>
         :root {
             --bg: #050507;
@@ -13,332 +12,814 @@
             --text: #ffffff;
             --dim: #8b9bb4;
             --danger: #ff4757;
+            --warning-red: #a34646;
             --border: #1e293b;
             --safe-top: env(safe-area-inset-top, 0px);
-            --safe-bottom: env(safe-area-inset-bottom, 0px);
         }
-
         * { box-sizing: border-box; font-family: 'Inter', system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
-        
         body { background: var(--bg); color: var(--text); margin: 0; padding: 0; width: 100vw; height: 100dvh; overflow: hidden; }
-        #app { width: 100%; height: 100%; max-width: 600px; margin: 0 auto; background: var(--surface); display: flex; flex-direction: column; position: relative; }
-
+        #app { width: 100%; height: 100%; max-width: 800px; margin: 0 auto; background: var(--surface); display: flex; flex-direction: column; position: relative; }
         #main-header { padding: calc(var(--safe-top) + 15px) 15px 10px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
         h1 { margin: 0; font-size: 0.9rem; letter-spacing: 2px; color: var(--accent); }
-
         .view { flex: 1; padding: 15px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; }
         .group { display: flex; flex-direction: column; gap: 4px; }
         label { font-size: 0.6rem; text-transform: uppercase; font-weight: 800; color: var(--dim); }
-        
         input { background: #000; border: 1px solid var(--border); color: #fff; padding: 8px; border-radius: 6px; font-size: 14px; width: 100%; }
         .btn { background: var(--accent); color: #000; border: none; padding: 16px; font-weight: 900; border-radius: 6px; cursor: pointer; margin-top: 10px; flex-shrink: 0; text-transform: uppercase; }
-        .db-btn-small { background: transparent; border: 1px solid var(--accent); color: var(--accent); padding: 4px 8px; font-size: 0.6rem; border-radius: 4px; font-weight: bold; cursor: pointer; }
-
-        #team-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
-        .team-zone { background: rgba(0,0,0,0.5); border: 1px solid var(--border); padding: 8px; min-height: 100px; border-radius: 6px; transition: 0.2s; }
+        .btn-outline { background: transparent; color: var(--accent); border: 2px solid var(--accent); }
+        .btn-sm { padding: 8px 14px; font-size: 0.7rem; margin-top: 0; }
+        .random-bar { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 5px; }
+        .rnd-btn { background: #0d0d0f; border: 1px solid var(--warning-red); color: var(--warning-red); padding: 14px 8px; border-radius: 6px; cursor: pointer; text-align: center; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; line-height: 1.1; }
+        .rnd-btn:active { background: var(--warning-red); color: #000; }
+        .rnd-text { font-size: 0.65rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px; }
+        #team-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; margin-top: 10px; }
+        .team-zone { background: rgba(0,0,0,0.5); border: 1px solid var(--border); padding: 8px; min-height: 80px; border-radius: 6px; }
         .zone-title { font-size: 0.55rem; font-weight: bold; margin-bottom: 8px; color: var(--accent); text-transform: uppercase; display: flex; align-items: center; gap: 5px; }
-
-        .agent-card { background: #1a1a20; border: 1px solid #333; padding: 8px; margin-bottom: 6px; border-radius: 4px; display: flex; align-items: center; gap: 8px; font-size: 0.75rem; color: white; position: relative; }
-        .agent-card.selected-agent { border-color: var(--accent); box-shadow: 0 0 10px var(--accent); z-index: 5; }
-        
+        .agent-card { background: #1a1a20; border: 1px solid #333; padding: 8px; margin-bottom: 6px; border-radius: 4px; display: flex; align-items: center; gap: 8px; font-size: 0.75rem; color: white; cursor: pointer; }
+        .agent-card.selected-agent { border-color: var(--accent); box-shadow: 0 0 10px var(--accent); }
         .algo-picker { background: #000; color: #fff; border: 1px solid #444; font-size: 0.65rem; padding: 4px; border-radius: 3px; flex: 1; outline: none; }
 
-        #sim { display: none; height: 100%; flex-direction: column; background: #000; overflow: hidden; position: relative; }
-        .top-bar { padding: calc(var(--safe-top) + 5px) 5px 5px; display: flex; gap: 4px; background: var(--surface); border-bottom: 1px solid var(--border); flex-shrink: 0; }
+        /* Sim */
+        #sim { display: none; height: 100%; flex-direction: column; background: #000; overflow: hidden; }
+        .top-bar { padding: calc(var(--safe-top) + 5px) 5px 5px; display: flex; gap: 4px; background: var(--surface); border-bottom: 1px solid var(--border); }
         .stat { background: #000; padding: 8px 4px; border: 1px solid var(--border); border-radius: 4px; font-size: 9px; font-weight: 800; text-align: center; flex: 1; cursor: pointer; }
-        
         #canvas-wrap { flex: 1; width: 100%; position: relative; background: #000; overflow: hidden; }
         canvas#world { position: absolute; top: 0; left: 0; width: 100%; height: 100%; image-rendering: pixelated; }
-        
-        .boards { padding: 8px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; background: var(--surface); border-top: 1px solid var(--border); flex-shrink: 0; height: 130px; }
+        .boards { padding: 8px; display: grid; gap: 6px; background: var(--surface); border-top: 1px solid var(--border); flex-shrink: 0; height: 160px; }
         .panel { background: #000; border: 1px solid var(--border); padding: 8px; border-radius: 6px; height: 100%; overflow-y: auto; }
-        .p-title { font-size: 0.55rem; color: var(--accent); margin-bottom: 4px; font-weight: bold; border-bottom: 1px solid #222; position: sticky; top: 0; background: #000; padding-bottom: 2px; }
-        .entry { display: flex; justify-content: space-between; align-items: center; font-size: 0.6rem; margin-bottom: 3px; }
-        .swatch { width: 8px; height: 8px; border-radius: 2px; display: inline-block; }
+        .p-title { font-size: 0.5rem; color: var(--accent); margin-bottom: 6px; font-weight: bold; border-bottom: 1px solid #222; position: sticky; top: 0; background: #000; padding-bottom: 2px; text-transform: uppercase; }
+        .entry { display: flex; justify-content: space-between; align-items: center; font-size: 0.55rem; margin-bottom: 4px; }
+        .swatch { width: 7px; height: 7px; border-radius: 1px; display: inline-block; }
 
-        /* Modal Styles */
-        #modal { display: none; position: absolute; inset: 0; background: rgba(0,0,0,0.98); z-index: 200; padding: 40px 20px; overflow-y: auto; }
-        #modal-close { position: absolute; top: 15px; right: 20px; font-size: 1.5rem; color: var(--accent); cursor: pointer; font-weight: bold; }
-        .algo-summary { margin-bottom: 25px; border-left: 2px solid var(--accent); padding-left: 15px; }
+        /* Overlays & Modals */
+        .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 200; padding: 20px; align-items: center; justify-content: center; }
+        .modal { background: var(--surface); border: 1px solid var(--accent); padding: 25px; border-radius: 12px; width: 100%; max-width: 420px; box-shadow: 0 0 30px rgba(0,242,255,0.2); display: flex; flex-direction: column; }
 
-        #end-screen { display: none; position: absolute; inset: 0; background: var(--bg); z-index: 100; padding: 20px; flex-direction: column; overflow-y: auto;}
+        /* Reuse */
+        .reuse-opt { background: #000; border: 1px solid #333; padding: 10px 12px; border-radius: 6px; font-size: 0.7rem; color: var(--dim); transition: all 0.15s; display: flex; align-items: flex-start; gap: 10px; }
+        .reuse-opt.active { border-color: var(--accent); color: var(--accent); background: rgba(0,242,255,0.05); }
+        .reuse-opt .ro-dot { width: 10px; height: 10px; border-radius: 50%; border: 2px solid currentColor; margin-top: 2px; flex-shrink: 0; position: relative; }
+        .reuse-opt.active .ro-dot::after { content:''; position:absolute; inset:2px; border-radius:50%; background:var(--accent); }
+        .reuse-opt .ro-label { font-weight:800; font-size:0.65rem; display:block; text-transform:uppercase; letter-spacing:0.5px; }
+        .reuse-opt .ro-desc { font-size:0.6rem; opacity:0.6; margin-top:1px; display:block; }
+        .reuse-warn { color:var(--danger); font-size:0.6rem; margin-top:4px; display:none; }
+
+        /* Duel Styles */
+        .duel-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 15px 0; }
+        .duel-row { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 6px; margin-bottom: 5px; }
+        .duel-val { font-weight: 900; color: var(--accent); font-size: 0.9rem; }
+        .duel-result-box { background: #000; border: 1px solid #2ed573; padding: 12px; border-radius: 8px; margin-top: 15px; }
+
+        /* Ban Phase */
+        .ban-eyebrow { font-size:0.55rem; font-weight:900; letter-spacing:3px; text-transform:uppercase; color:var(--dim); margin-bottom:5px; text-align:center; }
+        .ban-headline { font-size:1.1rem; font-weight:900; letter-spacing:1px; text-align:center; margin-bottom:3px; }
+        .ban-sub { font-size:0.58rem; color:var(--dim); text-align:center; margin-bottom:20px; max-width:320px; line-height:1.5; align-self: center; }
+        .ban-status-row { display:flex; gap:10px; width:100%; max-width:360px; margin-bottom:16px; align-self: center; }
+        .ban-status-box { flex:1; background:#000; border:1px solid #1e293b; border-radius:8px; padding:10px; text-align:center; }
+        .ban-status-label { font-size:0.48rem; font-weight:800; text-transform:uppercase; letter-spacing:1px; color:var(--dim); margin-bottom:4px; }
+        .ban-status-val { font-size:0.63rem; font-weight:900; min-height:1.3em; }
+        .ban-status-box.player-box { border-color:rgba(0,242,255,0.2); }
+        .ban-status-box.player-box .ban-status-label { color:var(--accent); }
+        .ban-status-box.ai-box { border-color:rgba(255,71,87,0.2); }
+        .ban-status-box.ai-box .ban-status-label { color:var(--danger); }
+        .ban-cards { display:flex; flex-direction:column; gap:9px; width:100%; max-width:360px; margin-bottom:16px; align-self: center; }
+        .ban-card { background:#09090e; border:1px solid #1e293b; border-radius:10px; padding:13px 15px; cursor:pointer; transition:all 0.18s ease; position:relative; overflow:hidden; }
+        .ban-card:hover:not(.player-banned):not(.ai-banned):not(.survived) { border-color:#ff4757; background:rgba(255,71,87,0.05); }
+        .ban-card.player-banned { border-color:rgba(255,71,87,0.6); background:rgba(255,71,87,0.07); pointer-events:none; }
+        .ban-card.ai-banned { border-color:#333; background:rgba(255,255,255,0.02); pointer-events:none; }
+        .ban-card.both-banned { border-color:rgba(236,204,104,0.6); background:rgba(236,204,104,0.05); pointer-events:none; }
+        .ban-card.survived { border-color:rgba(46,213,115,0.6); background:rgba(46,213,115,0.05); pointer-events:none; }
+        .ban-card-name { font-size:0.72rem; font-weight:900; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:2px; }
+        .ban-card-desc { font-size:0.57rem; color:var(--dim); line-height:1.4; }
+        .ban-tag { position:absolute; top:10px; right:10px; font-size:0.47rem; font-weight:900; text-transform:uppercase; letter-spacing:1px; padding:2px 7px; border-radius:3px; }
+        .tag-player { background:rgba(255,71,87,0.2); color:var(--danger); }
+        .tag-ai { background:rgba(255,255,255,0.07); color:#666; }
+        .tag-both { background:rgba(236,204,104,0.18); color:#eccc68; }
+        .tag-survived { background:rgba(46,213,115,0.18); color:#2ed573; }
+        .ban-hint { font-size:0.58rem; color:var(--dim); text-align:center; max-width:300px; line-height:1.5; align-self: center; }
+        .ban-hint strong { color:#fff; }
+
+        /* Result block */
+        .ban-result-wrap { display:none; flex-direction:column; align-items:center; gap:10px; width:100%; max-width:360px; align-self: center; }
+        .ban-result-box { background:#000; border:2px solid #2ed573; border-radius:10px; padding:18px 20px; text-align:center; width:100%; }
+        .ban-result-eyebrow { font-size:0.48rem; color:#2ed573; font-weight:800; text-transform:uppercase; letter-spacing:2px; margin-bottom:6px; }
+        .ban-result-name { font-size:1rem; font-weight:900; color:#fff; letter-spacing:1px; }
+        .ban-result-desc { font-size:0.58rem; color:var(--dim); margin-top:4px; }
+        .ban-result-how { font-size:0.53rem; color:#555; text-align:center; line-height:1.6; max-width:320px; }
+        @keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+        .fade-up { animation: fadeUp 0.35s ease forwards; }
+        .thinking::after { content:''; animation: dots 1.1s steps(3,end) infinite; }
+        @keyframes dots { 0%{content:''} 33%{content:'.'} 66%{content:'..'} 100%{content:'...'} }
+
+        /* Coin */
+        .coin-wrap { perspective:1000px; width:80px; height:80px; margin:20px auto; }
+        .coin { width:100%; height:100%; position:relative; transform-style:preserve-3d; transition:transform 3s cubic-bezier(0.1,0.8,0.2,1); }
+        .coin-face { position:absolute; width:100%; height:100%; border-radius:50%; border:4px solid #ffd700; background:#daa520; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:900; backface-visibility:hidden; font-size:10px; }
+        .heads { transform:rotateY(0deg); }
+        .tails { transform:rotateY(180deg); background:#b8860b; }
+
+        /* Draft */
+        #draft-screen { display:none; flex-direction:column; background:var(--bg); height:100%; overflow:hidden; }
+        .draft-body { flex:1; overflow-y:auto; padding:12px; display:flex; flex-direction:column; gap:12px; }
+        .draft-footer { background:var(--surface); padding:10px 12px; border-top:1px solid var(--border); flex-shrink:0; }
+        .draft-pool { display:flex; flex-wrap:wrap; gap:6px; min-height:60px; padding:8px; border:1px solid #222; border-radius:6px; background:#000; }
+        .algo-chip { background:#1a1a20; border:1px solid #333; color:var(--dim); padding:6px 10px; border-radius:4px; font-size:0.65rem; font-weight:700; cursor:grab; user-select:none; transition:border-color 0.15s,color 0.15s,opacity 0.15s; text-transform:uppercase; letter-spacing:0.3px; }
+        .algo-chip:hover { border-color:var(--accent); color:var(--accent); }
+        .algo-chip.dragging { opacity:0.3; cursor:grabbing; }
+        .algo-chip.used { opacity:0.25; cursor:not-allowed; }
+        .draft-sides { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+        .draft-side { display:flex; flex-direction:column; gap:8px; }
+        .side-label { font-size:0.55rem; font-weight:900; text-transform:uppercase; letter-spacing:2px; padding:4px 0; border-bottom:1px solid #222; }
+        .side-label.player { color:var(--accent); border-color:rgba(0,242,255,0.2); }
+        .side-label.ai { color:var(--danger); border-color:rgba(255,71,87,0.2); }
+        .draft-team { background:rgba(0,0,0,0.4); border:1px solid #1a1a20; border-radius:6px; padding:8px; }
+        .draft-team-title { font-size:0.5rem; font-weight:800; color:#555; text-transform:uppercase; margin-bottom:6px; }
+        .draft-slot { border:1px dashed #2a2a35; background:#0a0a0f; padding:7px 10px; border-radius:4px; margin-bottom:4px; font-size:0.65rem; color:#333; min-height:30px; transition:all 0.15s; position:relative; display:flex; align-items:center; gap:6px; }
+        .draft-slot.filled { border-style:solid; }
+        .draft-slot.filled.player-slot { border-color:rgba(0,242,255,0.4); background:rgba(0,242,255,0.05); color:var(--accent); }
+        .draft-slot.filled.ai-slot { border-color:rgba(255,71,87,0.4); background:rgba(255,71,87,0.05); color:var(--danger); }
+        .draft-slot.active-turn { border-color:rgba(0,242,255,0.5); animation:pulse-slot 1.5s ease-in-out infinite; }
+        @keyframes pulse-slot { 0%,100%{box-shadow:0 0 0 0 rgba(0,242,255,0.3)} 50%{box-shadow:0 0 8px 2px rgba(0,242,255,0.15)} }
+        .slot-remove { margin-left:auto; opacity:0; cursor:pointer; color:#666; font-size:10px; transition:opacity 0.15s; }
+        .draft-slot.filled:hover .slot-remove { opacity:1; }
+        .turn-banner { display:flex; align-items:center; gap:8px; padding:8px 10px; border-radius:6px; font-size:0.65rem; font-weight:900; text-transform:uppercase; letter-spacing:1px; }
+        .turn-banner.player { background:rgba(0,242,255,0.08); border:1px solid rgba(0,242,255,0.2); color:var(--accent); }
+        .turn-banner.ai { background:rgba(255,71,87,0.08); border:1px solid rgba(255,71,87,0.2); color:var(--danger); }
+        .turn-dot { width:8px; height:8px; border-radius:50%; background:currentColor; animation:blink 1s ease-in-out infinite; }
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+        .pos-map { width:100%; aspect-ratio:2/1; background:#050507; border:1px solid #1a1a20; border-radius:6px; position:relative; overflow:hidden; margin-top:6px; }
+        .pos-dot { position:absolute; width:14px; height:14px; border-radius:50%; transform:translate(-50%,-50%); display:flex; align-items:center; justify-content:center; font-size:7px; font-weight:900; color:#000; }
+        #end-screen { display:none; position:absolute; inset:0; background:var(--bg); z-index:100; padding:20px; flex-direction:column; overflow-y:auto; }
     </style>
 </head>
 <body>
-
 <div id="app">
-    <div id="setup" class="view">
-        <header id="main-header">
-            <h1>NEURAL SIEGE</h1>
-            <button class="db-btn-small" onclick="toggleModal(true)">ALGO DB</button>
-        </header>
-        
-        <div class="group"><label>Population</label><input type="number" id="pop" value="10" min="2" max="20" oninput="initSetup()"></div>
-        <div class="group"><label>Team Count</label><input type="number" id="team-count" value="10" min="1" max="20" oninput="initSetup()"></div>
-        <div class="group"><label>Sec Per Round</label><input type="number" id="round-len" value="15"></div>
-        
-        <div id="team-grid"></div>
-        <button class="btn" onclick="startSim()">INITIALIZE BATTLE</button>
-    </div>
 
-    <div id="sim">
-        <div class="top-bar">
-            <div class="stat" onclick="batchSim(10)" style="color:var(--accent)">+10 GEN</div>
-            <div id="timer-ui" class="stat" style="color:var(--danger); flex:1.5">15S</div>
-            <div class="stat" onclick="toggleModal(true)" style="color:var(--accent)">ALGO DB</div>
-            <div class="stat" onclick="showEndScreen()" style="color:white; border-color:#444; flex:0.5">EXIT</div>
+<div id="setup" class="view">
+    <header id="main-header"><h1>NEURAL SIEGE</h1></header>
+    <div class="group"><label>Population</label><input type="number" id="pop" value="12" oninput="initSetup()"></div>
+    <div class="group"><label>Team Count</label><input type="number" id="team-count" value="12" oninput="initSetup()"></div>
+    <div class="group"><label>Sec Per Round</label><input type="number" id="round-len" value="15"></div>
+    <div id="team-grid"></div>
+    <div class="random-bar">
+        <div class="rnd-btn" onclick="randomizeTeams()"><span class="rnd-text">Random Teams</span></div>
+        <div class="rnd-btn" onclick="randomizeAlgos()"><span class="rnd-text">Random Agents</span></div>
+        <div class="rnd-btn" onclick="randomizeAll()"><span class="rnd-text">Random Both</span></div>
+    </div>
+    <button class="btn" onclick="startSim()">INITIALIZE BATTLE</button>
+    <button class="btn btn-outline" onclick="openVSAI()">VS AI MODE</button>
+</div>
+
+<div id="duel-screen" class="overlay">
+    <div class="modal">
+        <div class="ban-eyebrow">The Selection Duel</div>
+        <div class="ban-headline">NUMBER BATTLE</div>
+        <div class="ban-sub">Your numbers vs the AI's will determine the match constraints.</div>
+        <div class="duel-inputs">
+            <div class="group"><label>Pick 1-10 (Teams)</label><input type="number" id="duel-p1" min="1" max="10" value="5"></div>
+            <div class="group"><label>Pick 1-20 (Sim)</label><input type="number" id="duel-p2" min="1" max="20" value="10"></div>
         </div>
-        <div id="canvas-wrap"><canvas id="world"></canvas></div>
-        <div class="boards">
-            <div class="panel"><div class="p-title">Live Coverage</div><div id="live-board"></div></div>
-            <div class="panel"><div class="p-title">Total Wins</div><div id="legacy-board"></div></div>
+        <div id="duel-reveal" style="display:none;">
+            <div class="duel-row"><span>AI Team Pick (1-10):</span> <span class="duel-val" id="duel-ai1">--</span></div>
+            <div class="duel-row"><span>AI Sim Pick (1-20):</span> <span class="duel-val" id="duel-ai2">--</span></div>
+            <div class="duel-result-box">
+                <div class="ban-result-eyebrow" style="color:#2ed573;">Battle Constraints Locked</div>
+                <div class="entry"><span>Teams Per Side (Avg floor):</span> <strong id="res-teams">--</strong></div>
+                <div class="entry"><span>Agents Per Team (Min):</span> <strong id="res-agents">--</strong></div>
+                <div class="entry"><span>Seconds Per Round (Max):</span> <strong id="res-sec">--</strong></div>
+            </div>
         </div>
-    </div>
-
-    <div id="modal">
-        <div id="modal-close" onclick="toggleModal(false)">×</div>
-        <h2 style="color:var(--accent); margin-top:0">ALGO DB</h2>
-        <p style="font-size: 0.7rem; color: var(--dim); margin-bottom: 30px;">Different algorithms change how agents prioritize empty vs contested pixels.</p>
-        <div id="algo-list-container"></div>
-    </div>
-
-    <div id="end-screen">
-        <h2 style="color:var(--accent); text-align:center; font-size:0.8rem; letter-spacing:2px">ANALYTICS</h2>
-        <div style="flex:1; width:100%; min-height:250px;"><canvas id="winChart"></canvas></div>
-        <button class="btn" onclick="location.reload()">RESTART</button>
+        <button class="btn" id="duel-btn" onclick="runNumberDuel()">LOCK IN NUMBERS</button>
+        <button class="btn" id="duel-proceed" style="display:none; background:#2ed573;" onclick="proceedToVsConfig()">PROCEED TO CONFIG →</button>
     </div>
 </div>
 
-<script>
-    const COLORS = ['#00f2ff', '#ff4757', '#2ed573', '#eccc68', '#ffa502', '#ff6b81', '#70a1ff', '#5352ed', '#1e90ff', '#ff7f50'];
+<div id="sim">
+    <div class="top-bar">
+        <div class="stat" onclick="batchSim(10)" style="color:var(--accent)">+10 GEN</div>
+        <div id="timer-ui" class="stat" style="color:var(--danger)">15S</div>
+        <div id="gen-ui" class="stat">GEN 1</div>
+        <div class="stat" onclick="finishGame()">EXIT</div>
+    </div>
+    <div id="canvas-wrap"><canvas id="world"></canvas></div>
+    <div class="boards" id="boards-container" style="grid-template-columns:1fr 1fr;">
+        <div class="panel"><div class="p-title">Logic</div><div id="agent-board"></div></div>
+        <div class="panel" id="team-panel" style="display:none"><div class="p-title">Teams</div><div id="team-board"></div></div>
+        <div class="panel" id="legacy-ffa-panel"><div class="p-title">Legacy</div><div id="legacy-ffa-board"></div></div>
+        <div class="panel" id="legacy-team-panel" style="display:none"><div class="p-title">Dynasty</div><div id="legacy-team-board"></div></div>
+    </div>
+</div>
 
-const ALGOS = [
-    { 
-        name: "Q-Learning", 
-        desc: "A model-free learner that maintains a Q-table to estimate pixel value. It balances exploration and exploitation to find efficient patrol routes." 
-    },
-    { 
-        name: "SARSA", 
-        desc: "An 'on-policy' learner that accounts for the agent's current movement policy. This creates risk-averse behavior, avoiding dangerous shortcuts." 
-    },
-    { 
-        name: "Double DQN", 
-        desc: "Uses dual neural networks to reduce value overestimation. It is highly stable, excelling at long-term territory consolidation over erratic bursts." 
-    },
-    { 
-        name: "Policy Gradient", 
-        desc: "Learns a map of probabilities for every move. Success increases the likelihood of specific move sequences, creating aggressive patterns." 
-    },
-    { 
-        name: "Actor-Critic", 
-        desc: "A hybrid approach where the 'Actor' selects moves and the 'Critic' provides instant feedback. This reduces variance and speeds up learning." 
-    },
-    { 
-        name: "Greedy Territory", 
-        desc: "A deterministic heuristic that moves toward the nearest unpainted pixel with 100% priority. Fast at expansion, but lacks defense." 
-    },
-    { 
-        name: "Wall Hugger", 
-        desc: "Prioritizes pixels adjacent to boundaries or existing perimeters. This creates solid, defensible borders at the cost of slower growth." 
-    },
-    { 
-        name: "Momentum Agent", 
-        desc: "Incorporates a velocity vector, making the agent more likely to continue in one direction. This allows for deep, surgical strikes through enemy lines." 
-    },
-    { 
-        name: "Parasite", 
-        desc: "A reactive algorithm that targets the current round leader. By ignoring neutral pixels to attack the dominant team, it acts as a balancer." 
-    },
-    { 
-        name: "Generation Learning", 
-        desc: "A meta-evolutionary algorithm that monitors performance across rounds. It swaps underperforming movement weights for successful ones between generations." 
-    }
-];
+<div id="end-screen">
+    <h2 style="color:var(--accent);text-align:center;">BATTLE ANALYTICS</h2>
+    <div id="winner-banner" style="text-align:center;padding:10px;font-weight:bold;font-size:1rem;"></div>
+    <button class="btn" onclick="location.reload()">RESTART</button>
+</div>
 
-    
-    let grid = [], agents = [], gen = 1, timer = 15, isRunning = false, lastTime = 0;
-    let historyData = {}; 
-    let selectedAgentEl = null;
+<div id="draft-screen">
+    <header id="main-header">
+        <h1>DRAFT PHASE</h1>
+        <div id="turn-banner-header" class="turn-banner player" style="padding:4px 8px;font-size:0.55rem;">
+            <div class="turn-dot"></div><span id="turn-label">PLAYER'S PICK</span>
+        </div>
+    </header>
+    <div class="draft-body">
+        <div id="active-mode-badge" style="background:#0a1a12;border:1px solid rgba(46,213,115,0.3);border-radius:6px;padding:8px 12px;font-size:0.6rem;color:#2ed573;font-weight:800;letter-spacing:1px;text-transform:uppercase;"></div>
+        <div class="draft-sides" id="draft-sides-container"></div>
+    </div>
+    <div class="draft-footer">
+        <div class="draft-footer-label">Available Algorithms — <span style="color:var(--accent);font-weight:700;">drag to slot or tap to pick</span></div>
+        <div class="draft-pool" id="draft-pool"></div>
+    </div>
+</div>
 
-    function initSetup() {
-        const pop = parseInt(document.getElementById('pop').value) || 10;
-        const tCount = parseInt(document.getElementById('team-count').value) || 10;
-        
-        const gridEl = document.getElementById('team-grid');
-        gridEl.innerHTML = '';
-        
-        // Build Algo DB Content
-        document.getElementById('algo-list-container').innerHTML = ALGOS.map(a => `
-            <div class="algo-summary">
-                <h2 style="color:var(--accent); margin: 0 0 5px 0; font-size: 0.9rem;">${a.name.toUpperCase()}</h2>
-                <p style="font-size: 0.7rem; margin: 0; line-height: 1.4;">${a.desc}</p>
+<div id="ban-screen" class="overlay">
+    <div class="modal" style="max-height:90vh; overflow-y:auto;">
+        <div class="ban-eyebrow">Pre-Battle Protocol</div>
+        <div class="ban-headline" id="ban-headline">BAN PHASE</div>
+        <div class="ban-sub" id="ban-sub">Each side bans one reuse rule. The surviving option is enforced for the draft.</div>
+        <div class="ban-status-row">
+            <div class="ban-status-box player-box">
+                <div class="ban-status-label">◈ Your Ban</div>
+                <div class="ban-status-val" id="ban-player-val" style="color:var(--dim);">—</div>
             </div>
-        `).join('');
+            <div class="ban-status-box ai-box">
+                <div class="ban-status-label">◈ AI Ban</div>
+                <div class="ban-status-val" id="ban-ai-val" style="color:var(--dim);">—</div>
+            </div>
+        </div>
+        <div class="ban-cards" id="ban-cards-list"></div>
+        <div class="ban-hint" id="ban-hint">Tap a card to <strong>ban</strong> that reuse mode from the battle.</div>
+        <div class="ban-result-wrap" id="ban-result-wrap">
+            <div class="ban-result-box fade-up">
+                <div class="ban-result-eyebrow">⚡ Active Reuse Mode</div>
+                <div class="ban-result-name" id="ban-result-name"></div>
+                <div class="ban-result-desc" id="ban-result-desc"></div>
+            </div>
+            <div class="ban-result-how fade-up" id="ban-result-how"></div>
+            <button class="btn fade-up" style="width:100%;max-width:360px;margin-top:6px;" onclick="initNumberDuel()">PROCEED TO DUEL →</button>
+        </div>
+    </div>
+</div>
 
-        for(let i = 0; i < tCount; i++) {
-            const teamColor = COLORS[i % COLORS.length];
-            const zone = document.createElement('div');
-            zone.className = 'team-zone';
-            zone.innerHTML = `<div class="zone-title"><span class="swatch" style="background:${teamColor}"></span>TEAM ${i+1}</div><div class="list" id="list-${i}"></div>`;
-            zone.onclick = () => {
-                if(selectedAgentEl) {
-                    document.getElementById(`list-${i}`).appendChild(selectedAgentEl);
-                    selectedAgentEl.classList.remove('selected-agent');
-                    selectedAgentEl = null;
+<div id="vs-modal" class="overlay">
+    <div class="modal" style="max-height:90vh;overflow-y:auto;">
+        <h3 style="margin:0 0 15px 0;color:var(--accent);font-size:0.8rem;">VS AI CONFIG</h3>
+        <div class="duel-row" style="background:#000; border:1px solid #222;">
+            <div class="group" style="margin:0;"><label>Teams Per Side</label><div class="duel-val" id="disp-vs-teams">--</div></div>
+            <div class="group" style="margin:0;"><label>Agents/Team</label><div class="duel-val" id="disp-vs-agents">--</div></div>
+            <div class="group" style="margin:0;"><label>Sec/Round</label><div class="duel-val" id="disp-vs-round">--</div></div>
+        </div>
+        <div class="group" style="margin-top:14px;">
+            <label>Active Algorithm Reuse (Locked via Ban Phase)</label>
+            <div class="reuse-opt active" style="cursor:default; margin-top:4px;">
+                <div class="ro-dot"></div>
+                <div><span class="ro-label" id="locked-reuse-name">...</span><span class="ro-desc" id="locked-reuse-desc">...</span></div>
+            </div>
+            <div class="reuse-warn" id="reuse-warn">⚠ With no-reuse, teams × agents per side cannot exceed 12.</div>
+        </div>
+        <div id="pos-map-group" class="group" style="margin-top:14px;display:none;">
+            <label>Spawn Zones (5-team tactical mode)</label>
+            <div class="pos-map" id="pos-map-preview"></div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:16px;">
+            <button class="btn btn-sm btn-outline" style="flex:1;" onclick="location.reload()">CANCEL</button>
+            <button class="btn btn-sm" style="flex:2;" onclick="runCoinFlip()" id="vs-start-btn">FLIP FOR FIRST PICK</button>
+        </div>
+    </div>
+</div>
+
+<div id="coin-overlay" class="overlay">
+    <div class="modal" style="text-align:center">
+        <h3 id="coin-result" style="color:var(--accent);min-height:1.2em;">FLIPPING...</h3>
+        <div class="coin-wrap"><div class="coin" id="coin-obj"><div class="coin-face heads">PLAYER</div><div class="coin-face tails">AI</div></div></div>
+    </div>
+</div>
+
+</div>
+<script>
+const COLORS=['#00f2ff','#ff4757','#2ed573','#eccc68','#ffa502','#ff6b81','#70a1ff','#5352ed','#1e90ff','#ff7f50','#a29bfe','#fab1a0','#ff00ff','#ffffff','#7cfc00','#ffd700'];
+const SPAWN_ZONES=[{label:'BL',xFrac:.1,yFrac:.9},{label:'BR',xFrac:.9,yFrac:.9},{label:'TR',xFrac:.9,yFrac:.1},{label:'TL',xFrac:.1,yFrac:.1},{label:'CTR',xFrac:.5,yFrac:.5}];
+const ALGOS=["Q-Learning","Double DQN","SARSA","Gen Evolution","Scorched Earth","Cannibal","Policy Gradient","Actor-Critic","Greedy Territory","Wall Hugger","Momentum Agent","Parasite"];
+const REUSE_MODES={
+    free:{key:'free',name:'Full Reuse',desc:'Any team can pick the same algorithm multiple times',short:'FULL REUSE'},
+    team:{key:'team',name:'No Cross-Team Reuse',desc:"An algo picked by one team can't be used by another",short:'NO CROSS-TEAM'},
+    none:{key:'none',name:'No Reuse At All',desc:'Every slot must hold a unique algorithm — pool limited to 12',short:'UNIQUE ONLY'}
+};
+
+let grid=[],agents=[],gen=1,timer=15,isRunning=false,lastTime=0,roundDuration=15;
+let historyData={},selectedAgentEl=null;
+let vsMode=false,vsTeamCount=0;
+let isFFA=true;
+let resolvedReuseMode='free';
+let duelData={teams:1,agents:3,seconds:15};
+let draftConfig={teamsPerSide:1,agentsPerTeam:3,turn:'player',reuse:'free'};
+let draftData={player:[],ai:[]};
+let draftSlots=[];
+let draggedAlgo=null;
+let banState={playerBan:null,aiBan:null,resolved:null};
+
+// ─── SETUP ───────────────────────────────────────────────────────────────────
+function initSetup(){
+    const pop=parseInt(document.getElementById('pop').value)||12;
+    const tCount=parseInt(document.getElementById('team-count').value)||12;
+    const gridEl=document.getElementById('team-grid');
+    gridEl.innerHTML='';
+    for(let i=0;i<tCount;i++){
+        const col=COLORS[i%COLORS.length];
+        const zone=document.createElement('div');
+        zone.className='team-zone';
+        zone.innerHTML=`<div class="zone-title"><span class="swatch" style="background:${col}"></span>TEAM ${i+1}</div><div class="list" id="list-${i}"></div>`;
+        zone.onclick=()=>{if(selectedAgentEl){document.getElementById(`list-${i}`).appendChild(selectedAgentEl);selectedAgentEl.classList.remove('selected-agent');selectedAgentEl=null;}};
+        gridEl.appendChild(zone);
+    }
+    for(let i=0;i<pop;i++){
+        const a=document.createElement('div');a.className='agent-card';
+        a.onclick=(e)=>{e.stopPropagation();if(selectedAgentEl)selectedAgentEl.classList.remove('selected-agent');selectedAgentEl=a;a.classList.add('selected-agent');};
+        const opts=ALGOS.map((al,idx)=>`<option value="${al}" ${idx===i%ALGOS.length?'selected':''}>${al}</option>`).join('');
+        a.innerHTML=`<strong>A${i+1}</strong><select class="algo-picker">${opts}</select>`;
+        document.getElementById(`list-${i%tCount}`).appendChild(a);
+    }
+}
+function randomizeTeams(){const t=parseInt(document.getElementById('team-count').value);document.querySelectorAll('#setup .agent-card').forEach(a=>document.getElementById(`list-${Math.floor(Math.random()*t)}`).appendChild(a));}
+function randomizeAlgos(){document.querySelectorAll('#setup .algo-picker').forEach(p=>p.selectedIndex=Math.floor(Math.random()*ALGOS.length));}
+function randomizeAll(){randomizeTeams();randomizeAlgos();}
+
+// ─── MODE DETECTION ──────────────────────────────────────────────────────────
+function checkFFA(){
+    const pop=parseInt(document.getElementById('pop').value)||12;
+    const tCount=parseInt(document.getElementById('team-count').value)||12;
+    isFFA=(pop===tCount);
+}
+
+function configurePanels(){
+    const teamPanel=document.getElementById('team-panel');
+    const ffaPanel=document.getElementById('legacy-ffa-panel');
+    const teamLegPanel=document.getElementById('legacy-team-panel');
+    const boards=document.getElementById('boards-container');
+    if(!isFFA){
+        teamPanel.style.display='block';
+        ffaPanel.style.display='none';
+        teamLegPanel.style.display='block';
+        boards.style.gridTemplateColumns='1fr 1fr 1fr 1fr';
+    } else {
+        teamPanel.style.display='none';
+        ffaPanel.style.display='block';
+        teamLegPanel.style.display='none';
+        boards.style.gridTemplateColumns='1fr 1fr';
+    }
+}
+
+// ─── VS CONFIG ───────────────────────────────────────────────────────────────
+function onVsConfigChange(){
+    const teams=duelData.teams;
+    const warn=document.getElementById('reuse-warn');
+    const btn=document.getElementById('vs-start-btn');
+    document.getElementById('pos-map-group').style.display=teams===5?'block':'none';
+    if(teams===5)renderPosMap();
+    const bad=resolvedReuseMode==='none'&&teams*duelData.agents>ALGOS.length;
+    warn.style.display=bad?'block':'none';btn.disabled=bad;btn.style.opacity=bad?'0.4':'1';
+}
+function renderPosMap(){
+    const map=document.getElementById('pos-map-preview');map.innerHTML='';
+    SPAWN_ZONES.forEach((z,i)=>{
+        const d=document.createElement('div');d.className='pos-dot';
+        d.style.left=`${z.xFrac*100}%`;d.style.top=`${z.yFrac*100}%`;
+        d.style.background=i<2?'var(--accent)':(i<4?'var(--danger)':'#888');
+        d.style.fontSize='6px';d.style.color='#000';d.innerText=i+1;
+        map.appendChild(d);
+    });
+}
+function openVSAI(){initBanPhase();}
+
+// ─── NUMBER DUEL ─────────────────────────────────────────────────────────────
+function initNumberDuel(){
+    document.getElementById('ban-screen').style.display='none';
+    document.getElementById('duel-screen').style.display='flex';
+}
+function runNumberDuel(){
+    const p1=parseInt(document.getElementById('duel-p1').value);
+    const p2=parseInt(document.getElementById('duel-p2').value);
+    const ai1=8,ai2=15;
+    const finalTeams=Math.max(1,Math.floor((p1+ai1)/2));
+    const finalAgents=Math.min(p2,ai2);
+    const finalSeconds=Math.max(p2,ai2);
+    duelData={teams:finalTeams,agents:finalAgents,seconds:finalSeconds};
+    document.getElementById('duel-ai1').innerText=ai1;
+    document.getElementById('duel-ai2').innerText=ai2;
+    document.getElementById('res-teams').innerText=finalTeams;
+    document.getElementById('res-agents').innerText=finalAgents;
+    document.getElementById('res-sec').innerText=finalSeconds+'s';
+    document.getElementById('duel-reveal').style.display='block';
+    document.getElementById('duel-btn').style.display='none';
+    document.getElementById('duel-proceed').style.display='block';
+}
+
+// ─── COIN FLIP ───────────────────────────────────────────────────────────────
+function runCoinFlip(){
+    if(document.getElementById('vs-start-btn').disabled)return;
+    const coin=document.getElementById('coin-obj');
+    document.getElementById('coin-overlay').style.display='flex';
+    const heads=Math.random()>0.5;
+    coin.style.transform=`rotateY(${1800+(heads?0:180)}deg)`;
+    setTimeout(()=>{
+        draftConfig.turn=heads?'player':'ai';
+        document.getElementById('coin-result').innerText=heads?'PLAYER STARTS!':'AI STARTS!';
+        setTimeout(()=>{
+            document.getElementById('vs-modal').style.display='none';
+            document.getElementById('coin-overlay').style.display='none';
+            document.getElementById('setup').style.display='none';
+            coin.style.transition='none';coin.style.transform='rotateY(0deg)';
+            setTimeout(()=>coin.style.transition='',50);
+            initDraftScreen();
+        },1500);
+    },3000);
+}
+
+// ─── BAN PHASE ───────────────────────────────────────────────────────────────
+function initBanPhase(){
+    banState={playerBan:null,aiBan:null,resolved:null};
+    const scr=document.getElementById('ban-screen');
+    scr.style.display='flex';
+    document.getElementById('ban-player-val').innerText='—';
+    document.getElementById('ban-ai-val').innerText='—';
+    document.getElementById('ban-result-wrap').style.display='none';
+    buildBanCards();
+    setTimeout(()=>{
+        banState.aiBan=(Math.random()<0.5?'none':(Math.random()<0.5?'free':'team'));
+        document.getElementById('ban-ai-val').innerHTML='<span class="thinking" style="color:#555;">thinking</span>';
+    },500);
+}
+function buildBanCards(){
+    const c=document.getElementById('ban-cards-list');c.innerHTML='';
+    Object.values(REUSE_MODES).forEach(mode=>{
+        const card=document.createElement('div');
+        card.className='ban-card';card.id=`ban-card-${mode.key}`;
+        card.innerHTML=`<div class="ban-card-name">${mode.name}</div><div class="ban-card-desc">${mode.desc}</div>`;
+        card.onclick=()=>playerBan(mode.key);
+        c.appendChild(card);
+    });
+}
+function playerBan(key){
+    if(banState.playerBan)return;
+    banState.playerBan=key;
+    document.getElementById('ban-player-val').innerText=REUSE_MODES[key].short;
+    document.getElementById(`ban-card-${key}`).classList.add('player-banned');
+    setTimeout(revealAIBan,1000);
+}
+function revealAIBan(){
+    const aKey=banState.aiBan;
+    document.getElementById('ban-ai-val').innerText=REUSE_MODES[aKey].short;
+    const aCard=document.getElementById(`ban-card-${aKey}`);
+    if(aKey===banState.playerBan){
+        aCard.classList.add('both-banned');
+        const others=Object.keys(REUSE_MODES).filter(k=>k!==aKey);
+        banState.resolved=others[Math.floor(Math.random()*others.length)];
+    } else {
+        aCard.classList.add('ai-banned');
+        banState.resolved=Object.keys(REUSE_MODES).find(k=>k!==banState.playerBan&&k!==aKey);
+    }
+    showBanResult(banState.resolved);
+}
+function showBanResult(key){
+    resolvedReuseMode=key;
+    const mode=REUSE_MODES[key];
+    document.getElementById('ban-result-name').innerText=mode.name.toUpperCase();
+    document.getElementById('ban-result-desc').innerText=mode.desc;
+    document.getElementById('ban-result-wrap').style.display='flex';
+}
+function proceedToVsConfig(){
+    document.getElementById('duel-screen').style.display='none';
+    document.getElementById('vs-modal').style.display='flex';
+    document.getElementById('locked-reuse-name').innerText=REUSE_MODES[resolvedReuseMode].name;
+    document.getElementById('locked-reuse-desc').innerText=REUSE_MODES[resolvedReuseMode].desc;
+    document.getElementById('disp-vs-teams').innerText=duelData.teams;
+    document.getElementById('disp-vs-agents').innerText=duelData.agents;
+    document.getElementById('disp-vs-round').innerText=duelData.seconds+'s';
+    onVsConfigChange();
+}
+
+// ─── DRAFT SCREEN ────────────────────────────────────────────────────────────
+function initDraftScreen(){
+    document.getElementById('draft-screen').style.display='flex';
+    draftConfig.teamsPerSide=duelData.teams;
+    draftConfig.agentsPerTeam=duelData.agents;
+    draftConfig.reuse=resolvedReuseMode;
+    roundDuration=duelData.seconds;
+    draftData={player:[],ai:[]};draftSlots=[];
+    document.getElementById('active-mode-badge').innerText=`⚡ REUSE MODE: ${REUSE_MODES[resolvedReuseMode].name.toUpperCase()}`;
+    buildDraftSlots();buildDraftPool();updateTurnUI();
+    if(draftConfig.turn==='ai')setTimeout(aiPick,800);
+}
+function buildDraftSlots(){
+    const cont=document.getElementById('draft-sides-container');cont.innerHTML='';
+    ['player','ai'].forEach(side=>{
+        const sd=document.createElement('div');sd.className='draft-side';
+        const lbl=document.createElement('div');lbl.className=`side-label ${side}`;lbl.innerText=side==='player'?'◈ PLAYER FORCES':'◈ AI FORCES';
+        sd.appendChild(lbl);
+        for(let t=0;t<draftConfig.teamsPerSide;t++){
+            const td=document.createElement('div');td.className='draft-team';
+            const tc=getTeamColor(side,t);
+            td.innerHTML=`<div class="draft-team-title" style="color:${tc}">TEAM ${t+1}</div>`;
+            for(let a=0;a<draftConfig.agentsPerTeam;a++){
+                const slot=document.createElement('div');slot.className='draft-slot';slot.innerText='EMPTY SLOT';
+                slot.dataset.side=side;slot.dataset.team=t;slot.dataset.agent=a;
+                slot.addEventListener('click',()=>{
+                    if(side==='player'&&draftConfig.turn==='player'&&!slot.classList.contains('filled'))
+                        document.getElementById('draft-pool').scrollIntoView({behavior:'smooth',block:'nearest'});
+                });
+                td.appendChild(slot);
+                draftSlots.push({side,teamIdx:t,agentIdx:a,el:slot});
+            }
+            sd.appendChild(td);
+        }
+        cont.appendChild(sd);
+    });
+}
+function buildDraftPool(){
+    const pool=document.getElementById('draft-pool');pool.innerHTML='';
+    ALGOS.forEach(algo=>{
+        const chip=document.createElement('div');chip.className='algo-chip';
+        chip.id=`chip-${algo.replace(/\s+/g,'-')}`;chip.innerText=algo;
+        chip.addEventListener('click',()=>{
+            if(draftConfig.turn!=='player'||!isAlgoAvailable(algo))return;
+            const ns=getNextOpenSlot('player');if(ns)handleDrop(ns.el,algo);
+        });
+        pool.appendChild(chip);
+    });
+    refreshPoolState();
+}
+function getTeamColor(side,idx){
+    return side==='player'?'#1e90ff':'#ff4757';
+}
+function isAlgoAvailable(algo){return isAlgoAvailableForSide(algo,draftConfig.turn);}
+function isAlgoAvailableForSide(algo,side){
+    if(draftConfig.reuse==='free')return true;
+    const all=[...draftData.player,...draftData.ai].map(d=>d.algo);
+    if(draftConfig.reuse==='none')return!all.includes(algo);
+    if(draftConfig.reuse==='team'){
+        const other=(side==='player'?draftData.ai:draftData.player).map(d=>d.algo);
+        return!other.includes(algo);
+    }
+    return true;
+}
+function refreshPoolState(){
+    ALGOS.forEach(algo=>{
+        const chip=document.getElementById(`chip-${algo.replace(/\s+/g,'-')}`);if(!chip)return;
+        chip.classList.toggle('used',draftConfig.turn!=='player'||!isAlgoAvailable(algo));
+    });
+}
+function getNextOpenSlot(side){return draftSlots.find(s=>s.side===side&&!s.el.classList.contains('filled'))||null;}
+function handleDrop(slotEl,algo){
+    const side=slotEl.dataset.side,teamIdx=parseInt(slotEl.dataset.team);
+    if(side!==draftConfig.turn||!isAlgoAvailableForSide(algo,side)||slotEl.classList.contains('filled'))return;
+    fillSlot(slotEl,algo,side,teamIdx);draftData[side].push({algo,team:teamIdx});
+    const total=draftConfig.teamsPerSide*draftConfig.agentsPerTeam*2;
+    if(draftData.player.length+draftData.ai.length>=total){setTimeout(startDraftedBattle,400);return;}
+    draftConfig.turn=draftConfig.turn==='player'?'ai':'player';
+    updateTurnUI();refreshPoolState();
+    if(draftConfig.turn==='ai')setTimeout(aiPick,700);
+}
+function fillSlot(slotEl,algo,side,teamIdx){
+    const col=getTeamColor(side,teamIdx);
+    slotEl.innerHTML=`<span style="color:${col};font-weight:800;font-size:0.65rem;">${algo}</span>`;
+    slotEl.classList.add('filled',`${side}-slot`);
+}
+function updateTurnUI(){
+    const b=document.getElementById('turn-banner-header'),l=document.getElementById('turn-label');
+    b.className=`turn-banner ${draftConfig.turn}`;
+    l.innerText=draftConfig.turn==='player'?"PLAYER'S PICK":'AI IS PICKING...';
+    highlightNextSlot();refreshPoolState();
+}
+function highlightNextSlot(){
+    draftSlots.forEach(s=>s.el.classList.remove('active-turn'));
+    const n=getNextOpenSlot(draftConfig.turn);if(n)n.el.classList.add('active-turn');
+}
+function aiPick(){
+    const avail=ALGOS.filter(a=>isAlgoAvailableForSide(a,'ai'));
+    if(!avail.length)return;
+    const algo=avail[Math.floor(Math.random()*avail.length)];
+    const ns=getNextOpenSlot('ai');if(!ns)return;
+    handleDrop(ns.el,algo);
+}
+
+// ─── BATTLE SIM ──────────────────────────────────────────────────────────────
+function startDraftedBattle(){
+    agents=[];historyData={};
+    vsMode=true;
+    isFFA=false;
+    vsTeamCount=draftConfig.teamsPerSide*2;
+    let gi=0;
+    ['player','ai'].forEach(side=>{
+        for(let t=0;t<draftConfig.teamsPerSide;t++){
+            const col=getTeamColor(side,t),name=`${side==='player'?'P':'AI'}-T${t+1}`;
+            if(!historyData[name])historyData[name]=[0];
+            draftData[side].filter(d=>d.team===t).forEach((ta,i)=>{
+                agents.push({id:`${side[0].toUpperCase()}${t}${i}`,color:col,team:name,algo:ta.algo,agentKey:name,active:true,x:0,y:0,totalTiles:0,bestGameTiles:0,spawnZoneIndex:gi});
+            });
+            gi++;
+        }
+    });
+    document.getElementById('draft-screen').style.display='none';
+    document.getElementById('sim').style.display='flex';
+    configurePanels();
+    resizeCanvas();isRunning=true;startRound();requestAnimationFrame(loop);
+}
+
+function startSim(){
+    checkFFA();
+    agents=[];historyData={};
+    vsMode=false;
+    roundDuration=parseInt(document.getElementById('round-len').value)||15;
+    Array.from(document.querySelectorAll('#setup .team-zone')).filter(z=>z.querySelectorAll('.agent-card').length>0).forEach(zone=>{
+        const tn=zone.querySelector('.zone-title').innerText.trim(),tc=zone.querySelector('.swatch').style.background;
+        zone.querySelectorAll('.agent-card').forEach(card=>{
+            const algo=card.querySelector('.algo-picker').value;
+            if(!historyData[tn])historyData[tn]=[0];
+            agents.push({id:card.querySelector('strong').innerText,color:tc,team:tn,algo,agentKey:tn,active:true,x:0,y:0,totalTiles:0,bestGameTiles:0});
+        });
+    });
+    document.getElementById('setup').style.display='none';
+    document.getElementById('sim').style.display='flex';
+    configurePanels();
+    resizeCanvas();isRunning=true;startRound();requestAnimationFrame(loop);
+}
+
+function resizeCanvas(){const c=document.getElementById('world'),w=document.getElementById('canvas-wrap');c.width=w.clientWidth;c.height=w.clientHeight;}
+
+function startRound(){
+    const res=8;
+    grid=Array(Math.floor(document.getElementById('world').width/res)).fill().map(()=>Array(Math.floor(document.getElementById('world').height/res)).fill('#000'));
+    timer=roundDuration;
+    document.getElementById('timer-ui').innerText=`${timer}S`;
+    agents.forEach(a=>{a.active=true;a.x=Math.floor(Math.random()*grid.length);a.y=Math.floor(Math.random()*grid[0].length);});
+}
+
+function loop(now){
+    if(!isRunning)return;
+    if(now-lastTime>=1000){timer--;document.getElementById('timer-ui').innerText=`${timer}S`;if(timer<=0)knockout();lastTime=now;}
+    updateLogic();render();updateUI();
+    const au=agents.filter(a=>a.active),uk=[...new Set(au.map(a=>a.team))];
+    if(uk.length<=1){if(au[0])recordWin(au[0].agentKey);gen++;startRound();}
+    requestAnimationFrame(loop);
+}
+
+function updateLogic(){
+    const gw=grid.length,gh=grid[0].length;
+    agents.forEach(a=>{
+        if(!a.active)return;
+        const d=Math.floor(Math.random()*4);
+        if(d===0)a.y--;else if(d===1)a.y++;else if(d===2)a.x--;else a.x++;
+        a.x=(a.x+gw)%gw;a.y=(a.y+gh)%gh;grid[a.x][a.y]=a.color;
+    });
+}
+
+function render(){
+    const cv=document.getElementById('world'),ctx=cv.getContext('2d');
+    const cw=cv.width/grid.length,ch=cv.height/grid[0].length;
+    ctx.fillStyle='#000';ctx.fillRect(0,0,cv.width,cv.height);
+    for(let x=0;x<grid.length;x++)for(let y=0;y<grid[0].length;y++)if(grid[x][y]!=='#000'){ctx.fillStyle=grid[x][y];ctx.fillRect(x*cw,y*ch,cw,ch);}
+}
+
+function knockout(){
+    const c=getCoverage();let s={};
+    agents.forEach(a=>{const cv=c[a.color]||0;if(a.active)s[a.team]=(s[a.team]||0)+cv;});
+    let low=Infinity,loser=null;
+    Object.entries(s).forEach(([k,v])=>{if(v<low){low=v;loser=k;}});
+    if(loser)agents.forEach(a=>{if(a.team===loser)a.active=false;});
+    timer=roundDuration;
+}
+
+function getCoverage(){
+    const c={};
+    for(let x=0;x<grid.length;x++)for(let y=0;y<grid[0].length;y++)if(grid[x][y]!=='#000'){c[grid[x][y]]=(c[grid[x][y]]||0)+1;}
+    return c;
+}
+
+function recordWin(key){
+    for(let k in historyData){
+        const lv=historyData[k][historyData[k].length-1];
+        historyData[k].push(k===key?lv+1:lv);
+    }
+    updateUI();
+}
+
+function batchSim(gens){
+    for(let g=0;g<gens;g++){
+        const res=8;
+        const cv=document.getElementById('world');
+        grid=Array(Math.floor(cv.width/res)).fill(null).map(()=>Array(Math.floor(cv.height/res)).fill('#000'));
+        agents.forEach(a=>{
+            a.active=true;
+            a.x=Math.floor(Math.random()*grid.length);
+            a.y=Math.floor(Math.random()*grid[0].length);
+        });
+        let steps=0;
+        const maxSteps=2000;
+        while(steps<maxSteps){
+            updateLogic();
+            const activeTeams=[...new Set(agents.filter(a=>a.active).map(a=>a.team))];
+            if(activeTeams.length<=1)break;
+            if(steps%100===99){
+                const cov=getCoverage();
+                const teamScores={};
+                agents.forEach(a=>{if(a.active)teamScores[a.team]=(teamScores[a.team]||0)+(cov[a.color]||0);});
+                const teamsArr=Object.entries(teamScores);
+                if(teamsArr.length>1){
+                    teamsArr.sort((a,b)=>a[1]-b[1]);
+                    const loser=teamsArr[0][0];
+                    agents.forEach(a=>{if(a.team===loser)a.active=false;});
                 }
-            };
-            gridEl.appendChild(zone);
+            }
+            steps++;
         }
+        const survivors=[...new Set(agents.filter(a=>a.active).map(a=>a.team))];
+        const winner=survivors[0]||null;
+        if(winner)recordWin(winner);
+        gen++;
+    }
+    render();
+    updateUI();
+    document.getElementById('gen-ui').innerText=`GEN ${gen}`;
+}
 
-        for(let i = 0; i < pop; i++) {
-            const agentDiv = document.createElement('div');
-            agentDiv.className = 'agent-card';
-            agentDiv.onclick = (e) => {
-                e.stopPropagation();
-                if(selectedAgentEl) selectedAgentEl.classList.remove('selected-agent');
-                selectedAgentEl = agentDiv;
-                agentDiv.classList.add('selected-agent');
-            };
-            const algoOpts = ALGOS.map((a, idx) => `<option value="${a.name}" ${idx === i % ALGOS.length ? 'selected' : ''}>${a.name}</option>`).join('');
-            agentDiv.innerHTML = `<strong>A${i+1}</strong> <select class="algo-picker">${algoOpts}</select>`;
-            document.getElementById(`list-${i % tCount}`).appendChild(agentDiv);
-        }
+function updateUI(){
+    document.getElementById('gen-ui').innerText=`GEN ${gen}`;
+    const cov=getCoverage();
+
+    // Logic board — all modes
+    const agentBoard=document.getElementById('agent-board');
+    agentBoard.innerHTML='';
+    [...agents].sort((a,b)=>(cov[b.color]||0)-(cov[a.color]||0)).forEach(a=>{
+        const tiles=cov[a.color]||0;
+        const row=document.createElement('div');
+        row.className='entry';
+        row.innerHTML=`<span><span class="swatch" style="background:${a.color}"></span> <span style="color:#fff">${a.id} <span style="font-size:0.48rem">${a.algo}</span></span></span><span style="color:${a.active?'#fff':'#444'}">${a.active?tiles:'✗'}</span>`;
+        agentBoard.appendChild(row);
+    });
+
+    // Team board — team mode only
+    if(!isFFA){
+        const teamBoard=document.getElementById('team-board');
+        teamBoard.innerHTML='';
+        const teamTiles={},teamColor={};
+        agents.forEach(a=>{
+            teamTiles[a.team]=(teamTiles[a.team]||0)+(cov[a.color]||0);
+            teamColor[a.team]=a.color;
+        });
+        const activeTeams=new Set(agents.filter(a=>a.active).map(a=>a.team));
+        Object.entries(teamTiles).sort((a,b)=>b[1]-a[1]).forEach(([team,tiles])=>{
+            const alive=activeTeams.has(team);
+            const row=document.createElement('div');
+            row.className='entry';
+            row.innerHTML=`<span><span class="swatch" style="background:${teamColor[team]}"></span> <span style="color:#fff">${team}</span></span><span style="color:${alive?'#fff':'#444'}">${alive?tiles:'✗'}</span>`;
+            teamBoard.appendChild(row);
+        });
     }
 
-    function toggleModal(show) { document.getElementById('modal').style.display = show ? 'block' : 'none'; }
-
-    function startSim() {
-        agents = []; historyData = {};
-        document.querySelectorAll('.team-zone').forEach((zone) => {
-            const teamName = zone.querySelector('.zone-title').innerText;
-            const teamColor = zone.querySelector('.swatch').style.background;
-            const teamList = zone.querySelectorAll('.agent-card');
-            if(teamList.length > 0) {
-                historyData[teamName] = [0];
-                teamList.forEach(card => {
-                    agents.push({
-                        color: teamColor, team: teamName,
-                        algo: card.querySelector('.algo-picker').value,
-                        active: true, x: 0, y: 0
-                    });
-                });
+    // Legacy FFA board — algo wins, FFA only
+    if(isFFA){
+        const ffaBoard=document.getElementById('legacy-ffa-board');
+        ffaBoard.innerHTML='';
+        // Map algo → wins + color from the agent that uses it
+        const algoMap={};
+        agents.forEach(a=>{
+            const wins=historyData[a.team]?historyData[a.team][historyData[a.team].length-1]||0:0;
+            if(!algoMap[a.algo]||wins>algoMap[a.algo].wins){
+                algoMap[a.algo]={wins,color:a.color};
             }
         });
-
-        document.getElementById('setup').style.display = 'none';
-        document.getElementById('sim').style.display = 'flex';
-        resizeCanvas();
-        isRunning = true;
-        startRound();
-        requestAnimationFrame(loop);
-    }
-
-    function resizeCanvas() {
-        const c = document.getElementById('world'), wrap = document.getElementById('canvas-wrap');
-        c.width = wrap.clientWidth; c.height = wrap.clientHeight;
-    }
-
-    function startRound() {
-        const c = document.getElementById('world'), res = 6;
-        grid = Array(Math.floor(c.width/res)).fill().map(() => Array(Math.floor(c.height/res)).fill('#000'));
-        timer = parseInt(document.getElementById('round-len').value) || 15;
-        agents.forEach(a => {
-            a.active = true;
-            a.x = Math.floor(Math.random() * grid.length);
-            a.y = Math.floor(Math.random() * grid[0].length);
+        Object.entries(algoMap).sort((a,b)=>b[1].wins-a[1].wins).forEach(([algo,data])=>{
+            const row=document.createElement('div');
+            row.className='entry';
+            row.innerHTML=`<span><span class="swatch" style="background:${data.color}"></span> <span style="color:#fff">${algo}</span></span><span style="color:${data.wins>0?'var(--accent)':'#555'}">${data.wins}W</span>`;
+            ffaBoard.appendChild(row);
         });
     }
 
-    function loop(now) {
-        if (!isRunning) return;
-        if (now - lastTime >= 1000) {
-            timer--;
-            document.getElementById('timer-ui').innerText = `${timer}S`;
-            if (timer <= 0) knockout();
-            lastTime = now;
-        }
-        updateLogic(); render(); updateUI();
-        const activeTeams = [...new Set(agents.filter(a => a.active).map(a => a.team))];
-        if (activeTeams.length <= 1) {
-            if(activeTeams[0]) recordWin(activeTeams[0]);
-            gen++; startRound();
-        }
-        requestAnimationFrame(loop);
-    }
-
-    function updateLogic() {
-        const gw = grid.length, gh = grid[0].length;
-        agents.forEach(a => {
-            if (!a.active) return;
-            const dir = Math.floor(Math.random() * 4);
-            if(dir === 0) a.y--; else if(dir === 1) a.y++; else if(dir === 2) a.x--; else a.x++;
-            a.x = (a.x + gw) % gw; a.y = (a.y + gh) % gh;
-            grid[a.x][a.y] = a.color;
+    // Dynasty board — team wins, team mode only
+    if(!isFFA){
+        const legTeamBoard=document.getElementById('legacy-team-board');
+        legTeamBoard.innerHTML='';
+        const teamColor={};
+        agents.forEach(a=>teamColor[a.team]=a.color);
+        Object.entries(historyData).sort((a,b)=>(b[1][b[1].length-1]||0)-(a[1][a[1].length-1]||0)).forEach(([team,hist])=>{
+            const wins=hist[hist.length-1]||0;
+            const row=document.createElement('div');
+            row.className='entry';
+            row.innerHTML=`<span><span class="swatch" style="background:${teamColor[team]||'#888'}"></span> <span style="color:#fff">${team}</span></span><span style="color:${wins>0?'var(--accent)':'#555'}">${wins}W</span>`;
+            legTeamBoard.appendChild(row);
         });
     }
+}
 
-    function recordWin(tn) {
-        for(let t in historyData) {
-            let lv = historyData[t][historyData[t].length - 1];
-            historyData[t].push(t === tn ? lv + 1 : lv);
-        }
-    }
+function finishGame(){
+    isRunning=false;
+    document.getElementById('sim').style.display='none';
+    document.getElementById('end-screen').style.display='flex';
+}
 
-    function knockout() {
-        const counts = {};
-        grid.flat().forEach(c => { if(c !== '#000') counts[c] = (counts[c] || 0) + 1; });
-        let teamScores = {};
-        agents.forEach(a => { if(a.active) teamScores[a.team] = (teamScores[a.team] || 0) + (counts[a.color] || 0); });
-        let lowest = Infinity, loser = null;
-        Object.entries(teamScores).forEach(([t, s]) => { if(s < lowest) { lowest = s; loser = t; } });
-        if(loser) {
-            const lColor = agents.find(a => a.team === loser).color;
-            agents.forEach(a => { if(a.team === loser) a.active = false; });
-            for(let x=0; x<grid.length; x++) for(let y=0; y<grid[0].length; y++) if(grid[x][y] === lColor) grid[x][y] = '#000';
-        }
-        timer = parseInt(document.getElementById('round-len').value);
-    }
-
-    function render() {
-        const canvas = document.getElementById('world'), ctx = canvas.getContext('2d');
-        const cw = canvas.width / grid.length, ch = canvas.height / grid[0].length;
-        ctx.fillStyle = '#000'; ctx.fillRect(0,0,canvas.width,canvas.height);
-        for(let x=0; x<grid.length; x++) {
-            grid[x].forEach((cell, y) => {
-                if(cell !== '#000') { ctx.fillStyle = cell; ctx.fillRect(x*cw, y*ch, cw, ch); }
-            });
-        }
-    }
-
-    function updateUI() {
-        document.getElementById('live-board').innerHTML = agents.filter(a => a.active).map(a => `
-            <div class="entry"><span><span class="swatch" style="background:${a.color}"></span> ${a.algo}</span></div>
-        `).join('');
-        document.getElementById('legacy-board').innerHTML = Object.entries(historyData).map(([n, h]) => `
-            <div class="entry"><span>${n}</span> <span>${h[h.length-1]}</span></div>
-        `).sort((a,b) => b.wins - a.wins).join('');
-    }
-
-    function showEndScreen() {
-        isRunning = false;
-        document.getElementById('sim').style.display = 'none';
-        document.getElementById('end-screen').style.display = 'flex';
-        const ctx = document.getElementById('winChart').getContext('2d');
-        new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: Array.from({length: historyData[Object.keys(historyData)[0]].length}, (_, i) => i),
-                datasets: Object.keys(historyData).map(t => ({
-                    label: t, data: historyData[t], borderColor: agents.find(a => a.team === t).color, tension: 0.1
-                }))
-            },
-            options: { responsive: true, maintainAspectRatio: false }
-        });
-    }
-
-    function batchSim(n) { for(let i=0; i<n; i++) knockout(); }
-
-    window.onload = initSetup;
+window.onload=initSetup;
 </script>
 </body>
 </html>
