@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Neural Siege: Analytics</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg: #050507;
+            --surface: #121217;
+            --accent: #00f2ff;
+            --text: #ffffff;
+            --dim: #64748b;
+            --danger: #ff4757;
+            --border: #1e293b;
+        }
+
+        * { box-sizing: border-box; font-family: 'Inter', system-ui, sans-serif; }
+        body { background: var(--bg); color: var(--text); margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
+
+        #app { width: 360px; height: 800px; background: var(--surface); border: 1px solid var(--border); position: relative; display: flex; flex-direction: column; }
+        header { padding: 10px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        h1 { margin: 0; font-size: 0.8rem; letter-spacing: 2px; color: var(--accent); }
+        .help-trigger { background: none; border: 1px solid var(--dim); color: var(--dim); border-radius: 50%; width: 20px; height: 20px; font-size: 12px; cursor: pointer; }
+
+        .view { flex: 1; padding: 15px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
+        .group { display: flex; flex-direction: column; gap: 4px; }
+        label { font-size: 0.55rem; text-transform: uppercase; font-weight: 800; color: var(--dim); }
+        
+        input, select { background: #000; border: 1px solid var(--border); color: #fff; padding: 8px; border-radius: 4px; font-size: 0.75rem; }
+        .config-card { background: #0a0a0f; border: 1px solid #222; padding: 8px; border-radius: 6px; }
+        .btn { background: var(--accent); color: #000; border: none; padding: 12px; font-weight: 900; border-radius: 4px; cursor: pointer; font-size: 0.7rem; transition: 0.2s; }
+        .btn:active { transform: scale(0.98); }
+
+        #sim { display: none; position: absolute; inset: 0; background: #000; z-index: 10; }
+        canvas#world { width: 360px; height: 480px; image-rendering: pixelated; }
+
+        .ui-top { position: absolute; top: 10px; left: 10px; right: 10px; pointer-events: none; display: flex; flex-direction: column; gap: 5px; }
+        .stat-row { display: flex; gap: 5px; flex-wrap: wrap; pointer-events: auto; }
+        .stat { background: rgba(0,0,0,0.85); padding: 4px 8px; border: 1px solid var(--border); border-radius: 4px; font-size: 9px; width: fit-content; }
+        .sim-btn { color: var(--accent); cursor: pointer; border: 1px solid var(--accent); background: rgba(0, 242, 255, 0.1); }
+        .end-btn { color: var(--danger); cursor: pointer; border: 1px solid var(--danger); background: rgba(255, 71, 87, 0.1); }
+        
+        .boards { position: absolute; bottom: 80px; left: 10px; right: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; pointer-events: none; }
+        .panel { background: rgba(0,0,0,0.9); border: 1px solid var(--border); padding: 6px; border-radius: 4px; max-height: 160px; overflow-y: auto; pointer-events: auto; }
+        .p-title { font-size: 0.5rem; color: var(--accent); margin-bottom: 4px; text-transform: uppercase; border-bottom: 1px solid #222; padding-bottom: 2px;}
+        .entry { display: flex; justify-content: space-between; font-size: 0.55rem; margin-bottom: 3px; align-items: center; }
+        .entry i { color: #aaa; flex: 1; margin-left: 4px; font-style: normal; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
+
+        #help-view, #results-view { display: none; position: absolute; inset: 0; background: var(--bg); z-index: 50; padding: 20px; overflow-y: auto; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+<div id="app">
+    <header>
+        <h1>NEURAL SIEGE</h1>
+        <button class="help-trigger" onclick="toggleHelp(true)">?</button>
+    </header>
+    
+    <div id="setup" class="view">
+        <div class="group">
+            <label>Population</label>
+            <input type="number" id="pop" value="8" min="2" oninput="drawConfig()">
+        </div>
+        <div class="group">
+            <label>Round Duration (sec)</label>
+            <input type="number" id="round-len" value="15" min="1">
+        </div>
+        <div class="group">
+            <label>Structure</label>
+            <select id="game-mode" onchange="drawConfig()">
+                <option value="ffa">Free For All</option>
+                <option value="teams">Teams</option>
+            </select>
+        </div>
+        <div id="team-ui" class="group hidden">
+            <label>Teams</label>
+            <input type="number" id="team-qty" min="2" value="2" oninput="drawConfig()">
+        </div>
+        <div id="config-list"></div>
+        <button class="btn" onclick="startSim()">Engage Systems</button>
+    </div>
+
+    <div id="sim">
+        <canvas id="world" width="36" height="80"></canvas>
+        <div class="ui-top">
+            <div style="display: flex; gap: 5px;">
+                <div id="timer-ui" class="stat" style="color:var(--danger)">Closure: 15s</div>
+                <div id="gen-ui" class="stat">Generation: 1</div>
+            </div>
+            <div class="stat-row">
+                <button class="stat sim-btn" onclick="batchSim(5)">Skip 5 Gen</button>
+                <button class="stat sim-btn" onclick="batchSim(10)">Skip 10 Gen</button>
+                <button class="stat end-btn" onclick="endGame()">End Sim</button>
+            </div>
+        </div>
+        <div class="boards">
+            <div class="panel"><div class="p-title">Live Territory</div><div id="live-board"></div></div>
+            <div class="panel"><div class="p-title">Legacy Wins</div><div id="legacy-board"></div></div>
+        </div>
+    </div>
+
+    <div id="help-view">
+        <h2 style="font-size: 1rem; color: var(--accent);">Algorithm Logic</h2>
+        <div id="help-content"></div>
+        <button class="btn" style="width:100%; margin-top:10px;" onclick="toggleHelp(false)">Return</button>
+    </div>
+
+    <div id="results-view">
+        <h2 style="font-size: 1rem; color: var(--accent);">Performance History</h2>
+        <canvas id="chartCanvas"></canvas>
+        <button class="btn" style="margin-top:20px; width:100%" onclick="resetSim()">New Simulation</button>
+    </div>
+</div>
+
+<script>
+    const COLORS = ['#00f2ff', '#ff4757', '#2ed573', '#eccc68', '#ffa502', '#ff6b81', '#70a1ff', '#5352ed', '#1e90ff', '#ff7f50'];
+    const ALGOS = ["Q-Learning", "SARSA", "Double DQN", "Policy Gradient", "Actor-Critic", "Greedy Territory", "Wall Hugger", "Momentum Agent"];
+    
+    let grid = [], agents = [], gen = 1, timer = 15;
+    let legacyWins = {}, winHistory = [], colorToAlgoMap = {};
+    let lastTime = 0, animId, isRunning = false;
+    let globalChart = null;
+
+    const DESCRIPTIONS = {
+        "Q-Learning": "Scores space +2 and enemy -1. Builds a memory table of which directions worked in previous generations.",
+        "SARSA": "Similar to Q-Learning but safer; updates strategy based on the move it *actually* makes next.",
+        "Double DQN": "Uses two sets of logic to prevent over-optimization, handling sudden enemy movements better.",
+        "Policy Gradient": "Pure probability. Directions that lead to large captures become much more likely over time.",
+        "Actor-Critic": "One logic 'acts' while another 'evaluates', fine-tuning movement based on efficiency.",
+        "Greedy Territory": "No memory. Just looks at North, South, East, West and moves to the first empty spot.",
+        "Wall Hugger": "Prioritizes staying near the edges of the map to avoid being surrounded.",
+        "Momentum Agent": "High 95% chance to keep moving in its current direction until it hits an obstacle."
+    };
+
+    function toggleHelp(show) {
+        if(show) {
+            const container = document.getElementById('help-content');
+            container.innerHTML = ALGOS.map(a => `<div style="margin-bottom:10px"><b style="color:var(--accent); font-size:0.7rem">${a}:</b><p style="font-size:0.6rem; color:var(--dim); margin:2px 0">${DESCRIPTIONS[a]}</p></div>`).join('');
+        }
+        document.getElementById('help-view').style.display = show ? 'block' : 'none';
+    }
+
+    function drawConfig() {
+        const pop = parseInt(document.getElementById('pop').value) || 2;
+        const mode = document.getElementById('game-mode').value;
+        const container = document.getElementById('config-list');
+        const teamUI = document.getElementById('team-ui');
+        
+        container.innerHTML = '';
+        if (mode === 'ffa') {
+            teamUI.classList.add('hidden');
+            for(let i=0; i<pop; i++) createCard(container, `Agent ${i+1}`, i, COLORS[i%10], 1, i);
+        } else {
+            teamUI.classList.remove('hidden');
+            const tQty = parseInt(document.getElementById('team-qty').value) || 2;
+            let counts = new Array(tQty).fill(Math.floor(pop/tQty));
+            for(let i=0; i<pop%tQty; i++) counts[i]++;
+            let aIdx = 0;
+            counts.forEach((c, tIdx) => { createCard(container, `Team ${tIdx+1}`, tIdx, COLORS[tIdx%10], c, aIdx); aIdx += c; });
+        }
+    }
+
+    function createCard(container, title, gIdx, color, count, sIdx) {
+        const div = document.createElement('div');
+        div.className = 'config-card';
+        let selects = '';
+        for(let j=0; j<count; j++) {
+            const defaultAlgo = ALGOS[(sIdx + j) % ALGOS.length];
+            selects += `<select class="algo-sel" data-group="${gIdx}" style="width:100%; margin-top:4px;">
+                ${ALGOS.map(a => `<option value="${a}" ${a===defaultAlgo?'selected':''}>${a}</option>`).join('')}</select>`;
+        }
+        div.innerHTML = `<div style="color:${color}; font-size:0.6rem; font-weight:bold">${title}</div>${selects}`;
+        container.appendChild(div);
+    }
+
+    function startSim() {
+        // Wipe old data, keep settings
+        agents = [];
+        colorToAlgoMap = {};
+        gen = 1;
+        winHistory = [];
+        legacyWins = {};
+        
+        document.querySelectorAll('.algo-sel').forEach((sel) => {
+            const color = COLORS[sel.dataset.group % 10];
+            colorToAlgoMap[color] = sel.value;
+            // Create fresh agents with completely blank memory arrays
+            agents.push({
+                color: color, 
+                groupIdx: parseInt(sel.dataset.group),
+                type: sel.value, 
+                weights: {up: Math.random(), down: Math.random(), left: Math.random(), right: Math.random()}
+            });
+        });
+
+        document.getElementById('setup').style.display = 'none';
+        document.getElementById('sim').style.display = 'block';
+        isRunning = true;
+        startRound();
+        
+        if(!animId) loop(performance.now());
+    }
+
+    function startRound() {
+        grid = Array(36).fill().map(() => Array(80).fill('#000'));
+        timer = parseInt(document.getElementById('round-len').value) || 15;
+        
+        // Reset positions but KEEP learning weights intact
+        agents.forEach(a => {
+            a.x = Math.floor(Math.random()*36);
+            a.y = Math.floor(Math.random()*80);
+            a.active = true;
+            a.lastDir = {x:0, y:1};
+        });
+        
+        document.getElementById('gen-ui').innerText = `Generation: ${gen}`;
+        document.getElementById('timer-ui').innerText = `Closure: ${timer}s`;
+    }
+
+    function loop(now) {
+        if (!isRunning) return;
+        if (!lastTime) lastTime = now;
+        
+        if (now - lastTime >= 1000) {
+            timer--;
+            document.getElementById('timer-ui').innerText = `Closure: ${timer}s`;
+            if (timer <= 0) knockout();
+            lastTime = now;
+        }
+        
+        updateLogic();
+        render();
+        updateUI();
+
+        const activeGroups = [...new Set(agents.filter(a => a.active).map(a => a.groupIdx))];
+        if (activeGroups.length <= 1) {
+            recordWin(activeGroups[0]);
+            gen++;
+            setTimeout(startRound, 400); // Visual pause before next round
+            return;
+        }
+        animId = requestAnimationFrame(loop);
+    }
+
+    function updateLogic() {
+        agents.forEach(a => {
+            if (!a.active) return;
+            const moves = [{n:'up',x:0,y:-1},{n:'down',x:0,y:1},{n:'left',x:-1,y:0},{n:'right',x:1,y:0}];
+            let chosen = moves[0];
+            
+            if (a.type === "Greedy Territory") {
+                moves.sort((m1, m2) => {
+                    let nx1 = (a.x+m1.x+36)%36, ny1 = (a.y+m1.y+80)%80;
+                    let nx2 = (a.x+m2.x+36)%36, ny2 = (a.y+m2.y+80)%80;
+                    return (grid[nx1][ny1] === '#000' ? 0 : 1) - (grid[nx2][ny2] === '#000' ? 0 : 1);
+                });
+                chosen = moves[0];
+            } else if (a.type === "Wall Hugger") {
+                moves.sort((m1, m2) => {
+                    let d1 = Math.min(a.x+m1.x, 35-(a.x+m1.x), a.y+m1.y, 79-(a.y+m1.y));
+                    let d2 = Math.min(a.x+m2.x, 35-(a.x+m2.x), a.y+m2.y, 79-(a.y+m2.y));
+                    return d1 - d2;
+                });
+                chosen = moves[0];
+            } else if (a.type === "Momentum Agent") {
+                chosen = Math.random() < 0.95 ? (moves.find(m => m.x === a.lastDir.x && m.y === a.lastDir.y) || moves[0]) : moves[Math.floor(Math.random()*4)];
+            } else {
+                // Learning Algorithms (Using persistent weights)
+                let maxU = -Infinity;
+                moves.forEach(m => {
+                    let nx = (a.x + m.x + 36) % 36, ny = (a.y + m.y + 80) % 80;
+                    let u = a.weights[m.n] + (grid[nx][ny] === '#000' ? 1 : -0.5);
+                    if (a.type === "Double DQN") u += Math.random() * 0.3;
+                    if (u > maxU) { maxU = u; chosen = m; }
+                });
+                // Update weight based on reward
+                a.weights[chosen.n] += (grid[(a.x+chosen.x+36)%36][(a.y+chosen.y+80)%80] === '#000' ? 0.05 : -0.02);
+            }
+
+            a.x = (a.x + chosen.x + 36) % 36;
+            a.y = (a.y + chosen.y + 80) % 80;
+            a.lastDir = {x: chosen.x, y: chosen.y};
+            grid[a.x][a.y] = a.color;
+        });
+    }
+
+    function knockout() {
+        const scores = {};
+        const active = agents.filter(a => a.active);
+        active.forEach(a => scores[a.groupIdx] = 0);
+        grid.flat().forEach(c => {
+            let idx = COLORS.indexOf(c);
+            if(idx !== -1 && scores[idx] !== undefined) scores[idx]++;
+        });
+
+        const sorted = Object.entries(scores).sort((a,b) => a[1]-b[1]);
+        if(sorted.length > 1) {
+            const loserIdx = parseInt(sorted[0][0]);
+            agents.forEach(a => { if(a.groupIdx === loserIdx) a.active = false; });
+            for(let x=0; x<36; x++) for(let y=0; y<80; y++) if(grid[x][y] === COLORS[loserIdx % 10]) grid[x][y] = '#000';
+        }
+        timer = parseInt(document.getElementById('round-len').value);
+    }
+
+    function recordWin(gIdx) {
+        if (gIdx === undefined) return;
+        const color = COLORS[gIdx % 10];
+        const algo = colorToAlgoMap[color];
+        legacyWins[algo] = (legacyWins[algo] || 0) + 1;
+        winHistory.push({ gen: gen, algo: algo, color: color });
+    }
+
+    function batchSim(count) {
+        isRunning = false; 
+        cancelAnimationFrame(animId); 
+        animId = null;
+
+        for(let i=0; i<count; i++) {
+            startRound(); 
+            let roundActive = true;
+            let subT = parseInt(document.getElementById('round-len').value);
+            let ticks = 0;
+            
+            while(roundActive) {
+                updateLogic();
+                ticks++;
+                if(ticks % 60 === 0) {
+                    subT--;
+                    if(subT <= 0) { knockout(); subT = parseInt(document.getElementById('round-len').value); }
+                }
+                const ag = [...new Set(agents.filter(a => a.active).map(a => a.groupIdx))];
+                if(ag.length <= 1) {
+                    recordWin(ag[0]);
+                    gen++;
+                    roundActive = false;
+                }
+                if(ticks > 10000) roundActive = false; // Infinite loop failsafe
+            }
+        }
+        
+        isRunning = true;
+        startRound();
+        lastTime = performance.now();
+        loop(lastTime);
+    }
+
+    function updateUI() {
+        const scores = {};
+        grid.flat().forEach(c => { if(c!=='#000') scores[c] = (scores[c] || 0) + 1; });
+        const list = Object.entries(scores).sort((a,b)=>b[1]-a[1]);
+        
+        // Live Board now includes Algorithm Names
+        document.getElementById('live-board').innerHTML = list.map(([c,v]) => 
+            `<div class="entry"><span style="color:${c}">■</span> <i>${colorToAlgoMap[c]}</i> <span>${v}</span></div>`
+        ).join('');
+        
+        document.getElementById('legacy-board').innerHTML = Object.entries(legacyWins).sort((a,b)=>b[1]-a[1]).map(([algo,v]) => {
+            const color = Object.keys(colorToAlgoMap).find(c => colorToAlgoMap[c] === algo);
+            return `<div class="entry"><span style="color:${color}">■</span> <i>${algo}</i> <span>${v}</span></div>`;
+        }).join('');
+    }
+
+    function render() {
+        const ctx = document.getElementById('world').getContext('2d');
+        ctx.fillStyle = '#000'; ctx.fillRect(0,0,36,80);
+        for(let x=0; x<36; x++) for(let y=0; y<80; y++) if(grid[x][y]!=='#000') { ctx.fillStyle=grid[x][y]; ctx.fillRect(x,y,1,1); }
+        agents.forEach(a => { if(a.active) { ctx.fillStyle='#fff'; ctx.fillRect(a.x,a.y,1,1); }});
+    }
+
+    function endGame() {
+        isRunning = false;
+        cancelAnimationFrame(animId);
+        document.getElementById('sim').style.display = 'none';
+        document.getElementById('results-view').style.display = 'block';
+        
+        const ctx = document.getElementById('chartCanvas').getContext('2d');
+        if (globalChart) globalChart.destroy(); // Prevent overlapping charts
+
+        const usedAlgos = [...new Set(winHistory.map(h => h.algo))];
+        const datasets = usedAlgos.map(algoName => {
+            const color = Object.keys(colorToAlgoMap).find(c => colorToAlgoMap[c] === algoName);
+            let cumulative = 0;
+            // Map 1:1 with winHistory length to create a proper timeline
+            const dataPoints = winHistory.map(h => {
+                if(h.algo === algoName) cumulative++;
+                return cumulative;
+            });
+            return { label: algoName, data: dataPoints, borderColor: color, tension: 0.1, pointRadius: 0 };
+        });
+
+        globalChart = new Chart(ctx, { 
+            type: 'line', 
+            data: { labels: winHistory.map((_,i)=>i+1), datasets: datasets }, 
+            options: { 
+                responsive: true, 
+                plugins: { legend: { labels: { color: '#fff', font: { size: 10 } } } },
+                scales: { 
+                    y: { grid: { color: '#222' }, ticks: { color: '#888' } }, 
+                    x: { grid: { color: '#222' }, ticks: { color: '#888' } } 
+                } 
+            } 
+        });
+    }
+
+    function resetSim() {
+        // Keeps the UI/Dropdown settings exactly as they were
+        document.getElementById('results-view').style.display = 'none';
+        document.getElementById('setup').style.display = 'flex';
+    }
+
+    window.onload = drawConfig;
+</script>
+</body>
+</html>
