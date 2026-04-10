@@ -866,75 +866,67 @@ function finishGame() {
     isRunning = false;
     document.getElementById('sim').style.display = 'none';
     const endScreen = document.getElementById('end-screen');
-    const winnerBanner = document.getElementById('winner-banner');
     endScreen.style.display = 'flex';
 
-    // 1. Aggregate Data
-    let stats = [];
-    if (isFFA) {
-        // Map Algorithm -> Total Wins
-        const algoWins = {};
-        const algoColors = {};
-        agents.forEach(a => {
-            const wins = historyData[a.team] ? historyData[a.team][historyData[a.team].length - 1] : 0;
-            algoWins[a.algo] = (algoWins[a.algo] || 0) + wins;
-            if (!algoColors[a.algo]) algoColors[a.algo] = a.color;
-        });
-        stats = Object.entries(algoWins).map(([name, wins]) => ({ name, wins, color: algoColors[name] }));
-    } else {
-        // Map Team -> Wins
-        stats = Object.entries(historyData).map(([name, hist]) => {
-            const agent = agents.find(a => a.team === name);
-            return { name, wins: hist[hist.length - 1], color: agent ? agent.color : '#888' };
-        });
-    }
-
-    // 2. Sort by wins descending
-    stats.sort((a, b) => b.wins - a.wins);
-
-    // 3. Find Max for scaling bars
-    const maxWins = Math.max(...stats.map(s => s.wins), 1);
-
-    // 4. Build Bar Graph HTML
-    let graphHTML = `<div style="margin-top:20px; display:flex; flex-direction:column; gap:10px;">`;
-    stats.forEach(item => {
-        const width = (item.wins / maxWins) * 100;
-        graphHTML += `
-            <div style="display:flex; align-items:center; gap:10px;">
-                <div style="width:80px; font-size:0.6rem; color:var(--dim); text-overflow:ellipsis; overflow:hidden; white-space:nowrap; text-align:right;">${item.name}</div>
-                <div style="flex:1; background:#1a1a20; height:12px; border-radius:3px; position:relative;">
-                    <div style="width:${width}%; background:${item.color}; height:100%; border-radius:3px; transition: width 1s ease-out;"></div>
-                </div>
-                <div style="width:30px; font-size:0.65rem; font-weight:bold; color:var(--accent);">${item.wins}</div>
-            </div>`;
-    });
-    graphHTML += `</div>`;
-
-    winnerBanner.innerHTML = `<h3>${isFFA ? 'ALGORITHM PERFORMANCE' : 'TEAM PERFORMANCE'}</h3>` + graphHTML;
+    // Always render using unified system
+    renderEndScreen();
 }
 
 // ─── END SCREEN & WIN GRAPH ──────────────────────────────────────────────────
 function renderEndScreen() {
-    const keys = Object.keys(historyData);
-    let winnerKey = null, maxWins = -1;
-    const teamColors = {};
-    agents.forEach(a => { teamColors[a.agentKey || a.team] = a.color; });
+    const algoHistory = {};
+    const algoColors = {};
 
-    keys.forEach(k => {
-        const hist = historyData[k];
-        const w = hist[hist.length - 1] || 0;
-        if (w > maxWins) { maxWins = w; winnerKey = k; }
+    // Initialize algorithms
+    agents.forEach(a => {
+        if (!algoHistory[a.algo]) {
+            algoHistory[a.algo] = [];
+            algoColors[a.algo] = a.color;
+        }
+    });
+
+    // Number of generations
+    const maxLen = Math.max(...Object.values(historyData).map(h => h.length));
+
+    // Build per-generation aggregation
+    for (let i = 0; i < maxLen; i++) {
+        const tempTotals = {};
+
+        agents.forEach(a => {
+            const teamHist = historyData[a.team] || [];
+            const wins = teamHist[i] || 0;
+
+            if (!tempTotals[a.algo]) tempTotals[a.algo] = 0;
+            tempTotals[a.algo] += wins;
+        });
+
+        // Push into algo history
+        Object.keys(algoHistory).forEach(algo => {
+            algoHistory[algo].push(tempTotals[algo] || 0);
+        });
+    }
+
+    // Replace ONLY for graphing (safe now)
+    historyData = algoHistory;
+
+    // Find winner
+    let winner = null;
+    let maxWins = -1;
+
+    Object.entries(algoHistory).forEach(([algo, hist]) => {
+        const wins = hist[hist.length - 1] || 0;
+        if (wins > maxWins) {
+            maxWins = wins;
+            winner = algo;
+        }
     });
 
     const wb = document.getElementById('winner-banner');
-    if (winnerKey) {
-        const col = teamColors[winnerKey] || '#00f2ff';
-        wb.innerHTML = `<span style="color:${col}">⬢ ${winnerKey}</span> <span style="color:#888;font-size:0.75rem;">— ${maxWins} wins</span>`;
-    } else {
-        wb.innerText = 'No winner recorded.';
+    if (winner) {
+        wb.innerHTML = `<span style="color:${algoColors[winner]}">${winner}</span> — ${maxWins} wins`;
     }
 
-    drawWinGraph(teamColors);
+    drawWinGraph(algoColors);
 }
 
 function drawWinGraph(teamColors) {
