@@ -40,7 +40,7 @@
 
         .agent-card { background: #000; border: 1px solid #222; padding: 6px; margin-bottom: 4px; border-radius: 4px; cursor: grab; display: flex; align-items: center; gap: 6px; font-size: 0.7rem; }
         .swatch { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
-        .algo-picker { background: transparent; color: #fff; border: none; font-size: 0.65rem; flex: 1; outline: none; }
+        .algo-picker { background: transparent; color: #000; border: none; font-size: 0.65rem; flex: 1; outline: none; }
 
         #sim { display: none; height: 100%; flex-direction: column; background: #000; overflow: hidden; position: relative; }
         .top-bar { padding: calc(var(--safe-top) + 5px) 5px 5px; display: flex; gap: 4px; background: var(--surface); border-bottom: 1px solid var(--border); flex-shrink: 0; }
@@ -340,29 +340,66 @@
     }
 
     function showEndScreen() {
-        isRunning = false;
-        document.getElementById('sim').style.display = 'none';
-        document.getElementById('end-screen').style.display = 'flex';
-        const ctx = document.getElementById('winChart').getContext('2d');
-        const labels = Array.from({length: historyData[Object.keys(historyData)[0]].length}, (_, i) => i);
-        const datasets = Object.keys(historyData).map(teamName => ({
-            label: teamName,
+    isRunning = false;
+    document.getElementById('sim').style.display = 'none';
+    document.getElementById('end-screen').style.display = 'flex';
+    const ctx = document.getElementById('winChart').getContext('2d');
+    
+    const labels = Array.from({length: historyData[Object.keys(historyData)[0]].length}, (_, i) => i);
+    
+    const datasets = Object.keys(historyData).map(teamName => {
+        const teamAgents = agents.filter(a => a.team === teamName);
+        const teamColor = teamAgents[0].color;
+        
+        // Build the label based on mode
+        let displayLabel;
+        if (isFFA) {
+            // FFA Mode: "Algorithm"
+            displayLabel = teamAgents[0].algo;
+        } else {
+            // Team Mode: "Team Name: Algo1: Algo2..."
+            const algos = teamAgents.map(a => a.algo).join(': ');
+            displayLabel = `${teamName}: ${algos}`;
+        }
+
+        return {
+            label: displayLabel,
             data: historyData[teamName],
-            borderColor: agents.find(a => a.team === teamName).color,
-            tension: 0.2, pointRadius: 0
-        }));
-        new Chart(ctx, {
-            type: 'line', data: { labels, datasets },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                scales: { 
-                    x: { ticks: { color: '#888', font: { size: 8 } }, grid: { display: false } },
-                    y: { ticks: { color: '#888', font: { size: 8 } }, grid: { color: '#222' } }
-                },
-                plugins: { legend: { display: !isFFA, labels: { color: '#fff', font: { size: 8 } } } }
+            borderColor: teamColor,
+            backgroundColor: teamColor, // Added for the legend swatch
+            tension: 0.2, 
+            pointRadius: 0
+        };
+    });
+
+    // Cleanup old chart instance if it exists to prevent flickering
+    if (window.myChart) window.myChart.destroy();
+
+    window.myChart = new Chart(ctx, {
+        type: 'line', 
+        data: { labels, datasets },
+        options: {
+            responsive: true, 
+            maintainAspectRatio: false,
+            scales: { 
+                x: { ticks: { color: '#888', font: { size: 8 } }, grid: { display: false } },
+                y: { ticks: { color: '#888', font: { size: 8 } }, grid: { color: '#222' } }
+            },
+            plugins: { 
+                legend: { 
+                    display: true, // Always show legend now
+                    position: 'bottom',
+                    labels: { 
+                        color: '#fff', 
+                        font: { size: 7 },
+                        boxWidth: 10,
+                        padding: 10
+                    } 
+                } 
             }
-        });
-    }
+        }
+    });
+}
 
     window.onload = initSetup;
     window.onresize = resizeCanvas;
