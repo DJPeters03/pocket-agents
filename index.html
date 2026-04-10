@@ -50,44 +50,51 @@
 
         #sim { display: none; position: absolute; inset: 0; background: #000; z-index: 10; flex-direction: column; }
         
+        /* Floating HUD Style */
         .sim-controls {
-            padding: calc(var(--safe-top) + 5px) 10px 10px;
-            background: var(--surface);
-            border-bottom: 1px solid var(--border);
+            padding: calc(var(--safe-top) + 10px) 10px 10px;
+            background: transparent; /* Removed solid background */
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 10px;
             z-index: 25;
+            flex-shrink: 0;
+            position: absolute;
+            top: 0; width: 100%;
+            pointer-events: none; /* Allows clicks through to canvas if needed, but buttons will override */
         }
+        .sim-controls > * { pointer-events: auto; }
 
         canvas#world { 
             width: 100%; 
-            flex: 1; 
+            flex: 1 1 auto; 
+            min-height: 0;
             image-rendering: pixelated; 
             background: #000;
         }
 
-        .stat-row { display: flex; gap: 6px; flex-wrap: wrap; }
-        .stat { background: #000; padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 11px; font-weight: 600; }
-        .sim-btn { color: var(--accent); cursor: pointer; border: 1px solid var(--accent); background: rgba(0, 242, 255, 0.05); }
-        .end-btn { color: var(--danger); cursor: pointer; border: 1px solid var(--danger); margin-left: auto; }
+        .stat-row { display: flex; gap: 4px; }
+        .stat { background: rgba(0,0,0,0.7); padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 10px; font-weight: 600; white-space: nowrap; backdrop-filter: blur(4px); }
+        .sim-btn { color: var(--accent); cursor: pointer; border: 1px solid var(--accent); background: rgba(0, 242, 255, 0.1); flex: 1; text-align: center; }
+        .end-btn { color: var(--danger); cursor: pointer; border: 1px solid var(--danger); background: rgba(0,0,0,0.7); }
         
         .boards { 
-            padding: 10px 10px calc(var(--safe-bottom) + 10px); 
+            padding: 8px 8px calc(var(--safe-bottom) + 8px); 
             display: grid; 
             grid-template-columns: 1fr 1fr; 
-            gap: 10px; 
+            gap: 8px; 
             background: var(--surface); 
             border-top: 1px solid var(--border);
             z-index: 25;
+            flex-shrink: 0;
         }
-        .panel { background: #000; border: 1px solid var(--border); padding: 10px; border-radius: 8px; height: 140px; overflow-y: auto; }
-        .p-title { font-size: 0.6rem; color: var(--accent); margin-bottom: 8px; text-transform: uppercase; border-bottom: 1px solid #222; padding-bottom: 4px; font-weight: bold;}
-        .entry { display: flex; justify-content: space-between; font-size: 0.65rem; margin-bottom: 5px; align-items: center; }
-        .entry i { color: #bbb; flex: 1; margin-left: 6px; font-style: normal; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.6rem;}
+        .panel { background: #000; border: 1px solid var(--border); padding: 8px; border-radius: 8px; height: 105px; overflow-y: auto; }
+        .p-title { font-size: 0.55rem; color: var(--accent); margin-bottom: 6px; text-transform: uppercase; border-bottom: 1px solid #222; padding-bottom: 4px; font-weight: bold;}
+        .entry { display: flex; justify-content: space-between; font-size: 0.6rem; margin-bottom: 4px; align-items: center; }
+        .entry i { color: #bbb; flex: 1; margin-left: 6px; font-style: normal; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.55rem;}
 
         #help-view, #results-view { display: none; position: absolute; inset: 0; background: var(--bg); z-index: 50; padding: calc(var(--safe-top) + 20px) 20px calc(var(--safe-bottom) + 20px); overflow-y: auto; flex-direction: column; }
-        .chart-container { flex: 1; position: relative; width: 100%; min-height: 300px; margin: 20px 0; }
+        .chart-container { flex: 1; position: relative; width: 100%; min-height: 250px; margin: 20px 0; }
         .hidden { display: none !important; }
     </style>
 </head>
@@ -130,14 +137,17 @@
 
     <div id="sim">
         <div class="sim-controls">
-            <div style="display: flex; gap: 8px;">
-                <div id="timer-ui" class="stat" style="color:var(--danger)">Closure: 15s</div>
-                <div id="gen-ui" class="stat">Generation: 1</div>
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div style="display: flex; gap: 6px;">
+                    <div id="gen-ui" class="stat">GEN: 1</div>
+                    <div id="timer-ui" class="stat" style="color:var(--danger)">TIME: 15s</div>
+                </div>
+                <button class="stat end-btn" onclick="endGame()">ABORT SIM</button>
             </div>
             <div class="stat-row">
-                <button class="stat sim-btn" onclick="batchSim(5)">Skip 5</button>
-                <button class="stat sim-btn" onclick="batchSim(10)">Skip 10</button>
-                <button class="stat end-btn" onclick="endGame()">End Sim</button>
+                <button class="stat sim-btn" onclick="batchSim(5)">+5</button>
+                <button class="stat sim-btn" onclick="batchSim(10)">+10</button>
+                <button class="stat sim-btn" onclick="batchSim(100)">+100</button>
             </div>
         </div>
 
@@ -195,17 +205,10 @@
     function drawConfig() {
         let popInput = document.getElementById('pop');
         let pop = parseInt(popInput.value) || 2;
-        
-        // Default to 20 if higher
-        if (pop > 20) {
-            pop = 20;
-            popInput.value = 20;
-        }
-
+        if (pop > 20) { pop = 20; popInput.value = 20; }
         const mode = document.getElementById('game-mode').value;
         const container = document.getElementById('config-list');
         const teamUI = document.getElementById('team-ui');
-        
         container.innerHTML = '';
         if (mode === 'ffa') {
             teamUI.classList.add('hidden');
@@ -225,10 +228,8 @@
         div.className = 'config-card';
         let selects = '';
         for(let j=0; j<count; j++) {
-            // Updated: If index >= 8, default to Q-Learning (index 0)
             const globalIdx = sIdx + j;
             const defaultAlgo = globalIdx < 8 ? ALGOS[globalIdx] : ALGOS[0];
-            
             selects += `<select class="algo-sel" data-group="${gIdx}" style="margin-top:6px; padding: 8px;">
                 ${ALGOS.map(a => `<option value="${a}" ${a===defaultAlgo?'selected':''}>${a}</option>`).join('')}</select>`;
         }
@@ -260,8 +261,8 @@
             a.x = Math.floor(Math.random()*36); a.y = Math.floor(Math.random()*80);
             a.active = true; a.lastDir = {x:0, y:1};
         });
-        document.getElementById('gen-ui').innerText = `Generation: ${gen}`;
-        document.getElementById('timer-ui').innerText = `Closure: ${timer}s`;
+        document.getElementById('gen-ui').innerText = `GEN: ${gen}`;
+        document.getElementById('timer-ui').innerText = `TIME: ${timer}s`;
     }
 
     function loop(now) {
@@ -269,7 +270,7 @@
         if (!lastTime) lastTime = now;
         if (now - lastTime >= 1000) {
             timer--;
-            document.getElementById('timer-ui').innerText = `Closure: ${timer}s`;
+            document.getElementById('timer-ui').innerText = `TIME: ${timer}s`;
             if (timer <= 0) knockout();
             lastTime = now;
         }
@@ -351,7 +352,7 @@
                 if(ticks % 60 === 0) { subT--; if(subT <= 0) { knockout(); subT = parseInt(document.getElementById('round-len').value); } }
                 const ag = [...new Set(agents.filter(a => a.active).map(a => a.groupIdx))];
                 if(ag.length <= 1) { recordWin(ag[0]); gen++; roundActive = false; }
-                if(ticks > 10000) roundActive = false; 
+                if(ticks > 5000) roundActive = false; 
             }
         }
         isRunning = true; startRound(); lastTime = performance.now(); loop(lastTime);
