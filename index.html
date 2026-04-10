@@ -42,12 +42,10 @@
         .swatch { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
         .algo-picker { background: transparent; color: #fff; border: none; font-size: 0.65rem; flex: 1; outline: none; }
 
-        /* FIXED LAYOUT: Sim Screen */
-        #sim { display: none; height: 100%; flex-direction: column; background: #000; overflow: hidden; }
+        #sim { display: none; height: 100%; flex-direction: column; background: #000; overflow: hidden; position: relative; }
         .top-bar { padding: calc(var(--safe-top) + 5px) 5px 5px; display: flex; gap: 4px; background: var(--surface); border-bottom: 1px solid var(--border); flex-shrink: 0; }
         .stat { background: #000; padding: 8px 4px; border: 1px solid var(--border); border-radius: 4px; font-size: 9px; font-weight: 800; text-align: center; flex: 1; cursor: pointer; }
         
-        /* Canvas container prevents it from sliding behind other elements */
         #canvas-wrap { flex: 1; width: 100%; position: relative; background: #000; overflow: hidden; }
         canvas#world { position: absolute; top: 0; left: 0; width: 100%; height: 100%; image-rendering: pixelated; }
 
@@ -56,6 +54,13 @@
         .p-title { font-size: 0.55rem; color: var(--accent); margin-bottom: 4px; font-weight: bold; border-bottom: 1px solid #222; position: sticky; top: 0; background: #000; padding-bottom: 2px; }
         .entry { display: flex; justify-content: space-between; align-items: center; font-size: 0.6rem; margin-bottom: 3px; }
         .entry-label { display: flex; align-items: center; gap: 4px; }
+
+        #help-btn { position: absolute; bottom: 140px; right: 15px; width: 35px; height: 35px; background: var(--accent); color: #000; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 1.2rem; cursor: pointer; z-index: 10; box-shadow: 0 4px 15px rgba(0,242,255,0.4); }
+
+        #modal { display: none; position: absolute; inset: 0; background: rgba(0,0,0,0.95); z-index: 200; padding: 30px 20px; overflow-y: auto; }
+        .modal-content { font-size: 0.8rem; line-height: 1.5; }
+        .algo-desc { margin-bottom: 15px; border-left: 2px solid var(--accent); padding-left: 10px; }
+        .algo-desc b { color: var(--accent); display: block; margin-bottom: 2px; font-size: 0.7rem; text-transform: uppercase; }
 
         #end-screen { display: none; position: absolute; inset: 0; background: var(--bg); z-index: 100; padding: 20px; flex-direction: column; overflow-y: auto;}
     </style>
@@ -73,6 +78,7 @@
     </div>
 
     <div id="sim">
+        <div id="help-btn" onclick="toggleModal(true)">?</div>
         <div class="top-bar">
             <div class="stat" onclick="batchSim(5)" style="color:var(--accent)">+5</div>
             <div class="stat" onclick="batchSim(10)" style="color:var(--accent)">+10</div>
@@ -87,6 +93,21 @@
         <div class="boards">
             <div class="panel"><div class="p-title">Live Capture</div><div id="live-board"></div></div>
             <div class="panel"><div class="p-title">Performance</div><div id="legacy-board"></div></div>
+        </div>
+
+        <div id="modal">
+            <div class="modal-content">
+                <h2 style="color:var(--accent); margin-top:0">ALGO DATABASE</h2>
+                <div class="algo-desc"><b>Q-Learning</b> Learns the value of actions in states, balancing exploration and reward exploitation.</div>
+                <div class="algo-desc"><b>SARSA</b> On-policy learning that accounts for the agent's current movement pattern.</div>
+                <div class="algo-desc"><b>Double DQN</b> Uses dual networks to reduce overestimation of territory value.</div>
+                <div class="algo-desc"><b>Policy Gradient</b> Directly optimizes the probability of moving toward empty pixels.</div>
+                <div class="algo-desc"><b>Actor-Critic</b> Combines value-based and policy-based methods for stable evolution.</div>
+                <div class="algo-desc"><b>Greedy Territory</b> Simple logic focused on capturing the immediate nearest empty cells.</div>
+                <div class="algo-desc"><b>Wall Hugger</b> Prioritizes borders and corners to secure defensive perimeters.</div>
+                <div class="algo-desc"><b>Momentum Agent</b> Gains "speed" the longer it moves in a single direction.</div>
+                <button class="btn" onclick="toggleModal(false)">CLOSE</button>
+            </div>
         </div>
     </div>
 
@@ -144,6 +165,10 @@
         }
     }
 
+    function toggleModal(show) {
+        document.getElementById('modal').style.display = show ? 'block' : 'none';
+    }
+
     function startSim() {
         agents = [];
         historyData = {};
@@ -172,6 +197,7 @@
     function resizeCanvas() {
         const c = document.getElementById('world');
         const wrap = document.getElementById('canvas-wrap');
+        if(!c || !wrap) return;
         c.width = wrap.clientWidth;
         c.height = wrap.clientHeight;
     }
@@ -182,9 +208,10 @@
         grid = Array(Math.floor(c.width/res)).fill().map(() => Array(Math.floor(c.height/res)).fill('#000'));
         timer = parseInt(document.getElementById('round-len').value) || 15;
         agents.forEach(a => {
+            a.active = true; // Restore everyone for the new round
             a.x = Math.floor(Math.random() * grid.length);
             a.y = Math.floor(Math.random() * grid[0].length);
-            if(a.active) grid[a.x][a.y] = a.color;
+            grid[a.x][a.y] = a.color;
         });
     }
 
@@ -201,10 +228,12 @@
         updateUI();
 
         const activeTeams = [...new Set(agents.filter(a => a.active).map(a => a.team))];
-        if (activeTeams.length <= 1) {
-            if(activeTeams.length === 1) recordWin(activeTeams[0]);
+        if (activeTeams.length === 1) {
+            recordWin(activeTeams[0]);
             gen++;
             startRound();
+        } else if (activeTeams.length === 0) {
+            startRound(); // Safeguard for draws
         }
         requestAnimationFrame(loop);
     }
@@ -220,10 +249,10 @@
         for(let i=0; i<n; i++) {
             while([...new Set(agents.filter(a => a.active).map(a => a.team))].length > 1) {
                 updateLogic();
-                if (Math.random() > 0.98) knockout(); 
+                if (Math.random() > 0.985) knockout(); 
             }
-            const winner = agents.find(a => a.active);
-            if(winner) recordWin(winner.team);
+            const active = agents.find(a => a.active);
+            if(active) recordWin(active.team);
             gen++;
             startRound();
         }
@@ -242,24 +271,37 @@
 
     function knockout() {
         const counts = {};
+        // Count pixels for every color currently on the board
         grid.flat().forEach(c => { if(c !== '#000') counts[c] = (counts[c] || 0) + 1; });
+        
         const teamCoverage = {};
         agents.forEach(a => {
             if(a.active) teamCoverage[a.team] = (teamCoverage[a.team] || 0) + (counts[a.color] || 0);
         });
+        
         let lowestVal = Infinity, loserTeam = null;
         Object.entries(teamCoverage).forEach(([team, score]) => {
             if(score < lowestVal) { lowestVal = score; loserTeam = team; }
         });
+
         if(loserTeam) {
+            // Identify the color associated with the losing team before deactivating them
             const loserColor = agents.find(a => a.team === loserTeam).color;
+            
+            // Deactivate all agents on that team
             agents.forEach(a => { if(a.team === loserTeam) a.active = false; });
-            for(let x=0; x<grid.length; x++) {
-                for(let y=0; y<grid[0].length; y++) {
-                    if(grid[x][y] === loserColor) grid[x][y] = '#000';
+
+            // REMOVAL LOGIC: Wipe their color from the grid entirely
+            for(let x = 0; x < grid.length; x++) {
+                for(let y = 0; y < grid[0].length; y++) {
+                    if(grid[x][y] === loserColor) {
+                        grid[x][y] = '#000';
+                    }
                 }
             }
         }
+        
+        // Reset the timer for the remaining survivors
         timer = parseInt(document.getElementById('round-len').value);
     }
 
