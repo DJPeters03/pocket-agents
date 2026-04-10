@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Neural Siege: Evolution</title>
+    <title>Neural Siege: 10-Algo Evolution</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
@@ -23,24 +23,25 @@
         body { background: var(--bg); color: var(--text); margin: 0; padding: 0; width: 100vw; height: 100dvh; overflow: hidden; }
         #app { width: 100%; height: 100%; max-width: 600px; margin: 0 auto; background: var(--surface); display: flex; flex-direction: column; position: relative; }
 
-        #main-header { padding: calc(var(--safe-top) + 15px) 15px 15px; border-bottom: 1px solid var(--border); }
-        h1 { margin: 0; font-size: 0.9rem; letter-spacing: 2px; color: var(--accent); text-align: center;}
+        #main-header { padding: calc(var(--safe-top) + 15px) 15px 10px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        h1 { margin: 0; font-size: 0.9rem; letter-spacing: 2px; color: var(--accent); }
 
         .view { flex: 1; padding: 15px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; }
-        .group { display: flex; flex-direction: column; gap: 6px; }
-        label { font-size: 0.65rem; text-transform: uppercase; font-weight: 800; color: var(--dim); }
+        .group { display: flex; flex-direction: column; gap: 4px; }
+        label { font-size: 0.6rem; text-transform: uppercase; font-weight: 800; color: var(--dim); }
         
-        input { background: #000; border: 1px solid var(--border); color: #fff; padding: 10px; border-radius: 6px; font-size: 14px; width: 100%; }
-        .btn { background: var(--accent); color: #000; border: none; padding: 16px; font-weight: 900; border-radius: 6px; cursor: pointer; margin-top: 10px; flex-shrink: 0; }
+        input { background: #000; border: 1px solid var(--border); color: #fff; padding: 8px; border-radius: 6px; font-size: 14px; width: 100%; }
+        .btn { background: var(--accent); color: #000; border: none; padding: 16px; font-weight: 900; border-radius: 6px; cursor: pointer; margin-top: 10px; flex-shrink: 0; text-transform: uppercase; }
+        .db-btn-small { background: transparent; border: 1px solid var(--accent); color: var(--accent); padding: 4px 8px; font-size: 0.6rem; border-radius: 4px; font-weight: bold; cursor: pointer; }
 
         #team-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
-        .team-zone { background: rgba(0,0,0,0.3); border: 1px solid var(--border); padding: 8px; min-height: 120px; border-radius: 6px; transition: 0.2s; }
-        .team-zone.drag-over { border-color: var(--accent); background: rgba(0, 242, 255, 0.1); }
-        .zone-title { font-size: 0.6rem; font-weight: bold; margin-bottom: 6px; color: var(--accent); text-transform: uppercase; display: flex; align-items: center; gap: 5px; }
+        .team-zone { background: rgba(0,0,0,0.5); border: 1px solid var(--border); padding: 8px; min-height: 100px; border-radius: 6px; transition: 0.2s; }
+        .zone-title { font-size: 0.55rem; font-weight: bold; margin-bottom: 8px; color: var(--accent); text-transform: uppercase; display: flex; align-items: center; gap: 5px; }
 
-        .agent-card { background: #000; border: 1px solid #222; padding: 6px; margin-bottom: 4px; border-radius: 4px; cursor: grab; display: flex; align-items: center; gap: 6px; font-size: 0.7rem; }
-        .swatch { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
-        .algo-picker { background: transparent; color: #000; border: none; font-size: 0.65rem; flex: 1; outline: none; }
+        .agent-card { background: #1a1a20; border: 1px solid #333; padding: 8px; margin-bottom: 6px; border-radius: 4px; display: flex; align-items: center; gap: 8px; font-size: 0.75rem; color: white; position: relative; }
+        .agent-card.selected-agent { border-color: var(--accent); box-shadow: 0 0 10px var(--accent); z-index: 5; }
+        
+        .algo-picker { background: #000; color: #fff; border: 1px solid #444; font-size: 0.65rem; padding: 4px; border-radius: 3px; flex: 1; outline: none; }
 
         #sim { display: none; height: 100%; flex-direction: column; background: #000; overflow: hidden; position: relative; }
         .top-bar { padding: calc(var(--safe-top) + 5px) 5px 5px; display: flex; gap: 4px; background: var(--surface); border-bottom: 1px solid var(--border); flex-shrink: 0; }
@@ -48,19 +49,17 @@
         
         #canvas-wrap { flex: 1; width: 100%; position: relative; background: #000; overflow: hidden; }
         canvas#world { position: absolute; top: 0; left: 0; width: 100%; height: 100%; image-rendering: pixelated; }
-
+        
         .boards { padding: 8px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; background: var(--surface); border-top: 1px solid var(--border); flex-shrink: 0; height: 130px; }
         .panel { background: #000; border: 1px solid var(--border); padding: 8px; border-radius: 6px; height: 100%; overflow-y: auto; }
         .p-title { font-size: 0.55rem; color: var(--accent); margin-bottom: 4px; font-weight: bold; border-bottom: 1px solid #222; position: sticky; top: 0; background: #000; padding-bottom: 2px; }
         .entry { display: flex; justify-content: space-between; align-items: center; font-size: 0.6rem; margin-bottom: 3px; }
-        .entry-label { display: flex; align-items: center; gap: 4px; }
+        .swatch { width: 8px; height: 8px; border-radius: 2px; display: inline-block; }
 
-        #help-btn { position: absolute; bottom: 140px; right: 15px; width: 35px; height: 35px; background: var(--accent); color: #000; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 1.2rem; cursor: pointer; z-index: 10; box-shadow: 0 4px 15px rgba(0,242,255,0.4); }
-
-        #modal { display: none; position: absolute; inset: 0; background: rgba(0,0,0,0.95); z-index: 200; padding: 30px 20px; overflow-y: auto; }
-        .modal-content { font-size: 0.8rem; line-height: 1.5; }
-        .algo-desc { margin-bottom: 15px; border-left: 2px solid var(--accent); padding-left: 10px; }
-        .algo-desc b { color: var(--accent); display: block; margin-bottom: 2px; font-size: 0.7rem; text-transform: uppercase; }
+        /* Modal Styles */
+        #modal { display: none; position: absolute; inset: 0; background: rgba(0,0,0,0.98); z-index: 200; padding: 40px 20px; overflow-y: auto; }
+        #modal-close { position: absolute; top: 15px; right: 20px; font-size: 1.5rem; color: var(--accent); cursor: pointer; font-weight: bold; }
+        .algo-summary { margin-bottom: 25px; border-left: 2px solid var(--accent); padding-left: 15px; }
 
         #end-screen { display: none; position: absolute; inset: 0; background: var(--bg); z-index: 100; padding: 20px; flex-direction: column; overflow-y: auto;}
     </style>
@@ -69,86 +68,124 @@
 
 <div id="app">
     <div id="setup" class="view">
-        <header id="main-header"><h1>NEURAL SIEGE</h1></header>
-        <div class="group"><label>Population Size</label><input type="number" id="pop" value="8" min="2" max="20" oninput="initSetup()"></div>
-        <div class="group"><label>Round Duration (Sec)</label><input type="number" id="round-len" value="15"></div>
-        <div class="group"><label id="team-label">Amount of Teams</label><input type="number" id="team-count" value="8" min="1" max="20" oninput="initSetup()"></div>
+        <header id="main-header">
+            <h1>NEURAL SIEGE</h1>
+            <button class="db-btn-small" onclick="toggleModal(true)">ALGO DB</button>
+        </header>
+        
+        <div class="group"><label>Population</label><input type="number" id="pop" value="10" min="2" max="20" oninput="initSetup()"></div>
+        <div class="group"><label>Team Count</label><input type="number" id="team-count" value="10" min="1" max="20" oninput="initSetup()"></div>
+        <div class="group"><label>Sec Per Round</label><input type="number" id="round-len" value="15"></div>
+        
         <div id="team-grid"></div>
         <button class="btn" onclick="startSim()">INITIALIZE BATTLE</button>
     </div>
 
     <div id="sim">
-        <div id="help-btn" onclick="toggleModal(true)">?</div>
         <div class="top-bar">
-            <div class="stat" onclick="batchSim(5)" style="color:var(--accent)">+5</div>
-            <div class="stat" onclick="batchSim(10)" style="color:var(--accent)">+10</div>
-            <div class="stat" onclick="batchSim(50)" style="color:var(--accent)">+50</div>
-            <div class="stat" onclick="batchSim(100)" style="color:var(--accent)">+100</div>
+            <div class="stat" onclick="batchSim(10)" style="color:var(--accent)">+10 GEN</div>
             <div id="timer-ui" class="stat" style="color:var(--danger); flex:1.5">15S</div>
-            <div class="stat" onclick="showEndScreen()" style="color:white; border-color:#444; flex:0.5">X</div>
+            <div class="stat" onclick="toggleModal(true)" style="color:var(--accent)">ALGO DB</div>
+            <div class="stat" onclick="showEndScreen()" style="color:white; border-color:#444; flex:0.5">EXIT</div>
         </div>
-        <div id="canvas-wrap">
-            <canvas id="world"></canvas>
-        </div>
+        <div id="canvas-wrap"><canvas id="world"></canvas></div>
         <div class="boards">
-            <div class="panel"><div class="p-title">Live Capture</div><div id="live-board"></div></div>
-            <div class="panel"><div class="p-title">Performance</div><div id="legacy-board"></div></div>
-        </div>
-
-        <div id="modal">
-            <div class="modal-content">
-                <h2 style="color:var(--accent); margin-top:0">ALGO DATABASE</h2>
-                <div class="algo-desc"><b>Q-Learning</b> Learns the value of actions in states, balancing exploration and reward exploitation.</div>
-                <div class="algo-desc"><b>SARSA</b> On-policy learning that accounts for the agent's current movement pattern.</div>
-                <div class="algo-desc"><b>Double DQN</b> Uses dual networks to reduce overestimation of territory value.</div>
-                <div class="algo-desc"><b>Policy Gradient</b> Directly optimizes the probability of moving toward empty pixels.</div>
-                <div class="algo-desc"><b>Actor-Critic</b> Combines value-based and policy-based methods for stable evolution.</div>
-                <div class="algo-desc"><b>Greedy Territory</b> Simple logic focused on capturing the immediate nearest empty cells.</div>
-                <div class="algo-desc"><b>Wall Hugger</b> Prioritizes borders and corners to secure defensive perimeters.</div>
-                <div class="algo-desc"><b>Momentum Agent</b> Gains "speed" the longer it moves in a single direction.</div>
-                <button class="btn" onclick="toggleModal(false)">CLOSE</button>
-            </div>
+            <div class="panel"><div class="p-title">Live Coverage</div><div id="live-board"></div></div>
+            <div class="panel"><div class="p-title">Total Wins</div><div id="legacy-board"></div></div>
         </div>
     </div>
 
+    <div id="modal">
+        <div id="modal-close" onclick="toggleModal(false)">×</div>
+        <h2 style="color:var(--accent); margin-top:0">ALGO DB</h2>
+        <p style="font-size: 0.7rem; color: var(--dim); margin-bottom: 30px;">Different algorithms change how agents prioritize empty vs contested pixels.</p>
+        <div id="algo-list-container"></div>
+    </div>
+
     <div id="end-screen">
-        <h2 style="color:var(--accent); text-align:center; font-size:0.8rem; letter-spacing:2px">BATTLE ANALYTICS</h2>
+        <h2 style="color:var(--accent); text-align:center; font-size:0.8rem; letter-spacing:2px">ANALYTICS</h2>
         <div style="flex:1; width:100%; min-height:250px;"><canvas id="winChart"></canvas></div>
-        <button class="btn" onclick="location.reload()">NEW SIMULATION</button>
+        <button class="btn" onclick="location.reload()">RESTART</button>
     </div>
 </div>
 
 <script>
-    const COLORS = ['#00f2ff', '#ff4757', '#2ed573', '#eccc68', '#ffa502', '#ff6b81', '#70a1ff', '#5352ed', '#1e90ff', '#ff7f50', '#a29bfe', '#fab1a0', '#55efc4', '#81ecec', '#74b9ff', '#ffeaa7', '#ff7675', '#fd79a8', '#636e72', '#b2bec3'];
-    const ALGOS = ["Q-Learning", "SARSA", "Double DQN", "Policy Gradient", "Actor-Critic", "Greedy Territory", "Wall Hugger", "Momentum Agent"];
+    const COLORS = ['#00f2ff', '#ff4757', '#2ed573', '#eccc68', '#ffa502', '#ff6b81', '#70a1ff', '#5352ed', '#1e90ff', '#ff7f50'];
+
+const ALGOS = [
+    { 
+        name: "Q-Learning", 
+        desc: "A model-free learner that maintains a Q-table to estimate pixel value. It balances exploration and exploitation to find efficient patrol routes." 
+    },
+    { 
+        name: "SARSA", 
+        desc: "An 'on-policy' learner that accounts for the agent's current movement policy. This creates risk-averse behavior, avoiding dangerous shortcuts." 
+    },
+    { 
+        name: "Double DQN", 
+        desc: "Uses dual neural networks to reduce value overestimation. It is highly stable, excelling at long-term territory consolidation over erratic bursts." 
+    },
+    { 
+        name: "Policy Gradient", 
+        desc: "Learns a map of probabilities for every move. Success increases the likelihood of specific move sequences, creating aggressive patterns." 
+    },
+    { 
+        name: "Actor-Critic", 
+        desc: "A hybrid approach where the 'Actor' selects moves and the 'Critic' provides instant feedback. This reduces variance and speeds up learning." 
+    },
+    { 
+        name: "Greedy Territory", 
+        desc: "A deterministic heuristic that moves toward the nearest unpainted pixel with 100% priority. Fast at expansion, but lacks defense." 
+    },
+    { 
+        name: "Wall Hugger", 
+        desc: "Prioritizes pixels adjacent to boundaries or existing perimeters. This creates solid, defensible borders at the cost of slower growth." 
+    },
+    { 
+        name: "Momentum Agent", 
+        desc: "Incorporates a velocity vector, making the agent more likely to continue in one direction. This allows for deep, surgical strikes through enemy lines." 
+    },
+    { 
+        name: "Parasite", 
+        desc: "A reactive algorithm that targets the current round leader. By ignoring neutral pixels to attack the dominant team, it acts as a balancer." 
+    },
+    { 
+        name: "Generation Learning", 
+        desc: "A meta-evolutionary algorithm that monitors performance across rounds. It swaps underperforming movement weights for successful ones between generations." 
+    }
+];
+
     
-    let grid = [], agents = [], gen = 1, timer = 15, isRunning = false, lastTime = 0, isFFA = false;
+    let grid = [], agents = [], gen = 1, timer = 15, isRunning = false, lastTime = 0;
     let historyData = {}; 
+    let selectedAgentEl = null;
 
     function initSetup() {
-        const pop = parseInt(document.getElementById('pop').value) || 2;
-        const tCount = parseInt(document.getElementById('team-count').value) || 1;
-        isFFA = (pop === tCount);
-        document.getElementById('team-label').innerText = isFFA ? "Amount of Teams (FFA MODE)" : "Amount of Teams";
+        const pop = parseInt(document.getElementById('pop').value) || 10;
+        const tCount = parseInt(document.getElementById('team-count').value) || 10;
+        
         const gridEl = document.getElementById('team-grid');
         gridEl.innerHTML = '';
         
+        // Build Algo DB Content
+        document.getElementById('algo-list-container').innerHTML = ALGOS.map(a => `
+            <div class="algo-summary">
+                <h2 style="color:var(--accent); margin: 0 0 5px 0; font-size: 0.9rem;">${a.name.toUpperCase()}</h2>
+                <p style="font-size: 0.7rem; margin: 0; line-height: 1.4;">${a.desc}</p>
+            </div>
+        `).join('');
+
         for(let i = 0; i < tCount; i++) {
             const teamColor = COLORS[i % COLORS.length];
             const zone = document.createElement('div');
             zone.className = 'team-zone';
-            zone.id = `zone-${i}`;
-            zone.dataset.color = teamColor;
-            zone.innerHTML = `
-                <div class="zone-title"><span class="swatch" style="background:${teamColor}"></span>Team ${i+1}</div>
-                <div class="list" id="list-${i}" style="min-height:80px"></div>
-            `;
-            zone.ondragover = (e) => { e.preventDefault(); zone.classList.add('drag-over'); };
-            zone.ondragleave = () => zone.classList.remove('drag-over');
-            zone.ondrop = (e) => {
-                e.preventDefault();
-                zone.classList.remove('drag-over');
-                document.getElementById(`list-${i}`).appendChild(document.getElementById(e.dataTransfer.getData("text")));
+            zone.innerHTML = `<div class="zone-title"><span class="swatch" style="background:${teamColor}"></span>TEAM ${i+1}</div><div class="list" id="list-${i}"></div>`;
+            zone.onclick = () => {
+                if(selectedAgentEl) {
+                    document.getElementById(`list-${i}`).appendChild(selectedAgentEl);
+                    selectedAgentEl.classList.remove('selected-agent');
+                    selectedAgentEl = null;
+                }
             };
             gridEl.appendChild(zone);
         }
@@ -156,34 +193,36 @@
         for(let i = 0; i < pop; i++) {
             const agentDiv = document.createElement('div');
             agentDiv.className = 'agent-card';
-            agentDiv.draggable = true;
-            agentDiv.id = `agent-${i}`;
-            agentDiv.ondragstart = (e) => e.dataTransfer.setData("text", agentDiv.id);
-            const algoOpts = ALGOS.map((a, idx) => `<option value="${a}" ${idx === i % ALGOS.length ? 'selected' : ''}>${a}</option>`).join('');
-            agentDiv.innerHTML = `<div style="font-weight:bold">A${i+1}</div><select class="algo-picker">${algoOpts}</select>`;
+            agentDiv.onclick = (e) => {
+                e.stopPropagation();
+                if(selectedAgentEl) selectedAgentEl.classList.remove('selected-agent');
+                selectedAgentEl = agentDiv;
+                agentDiv.classList.add('selected-agent');
+            };
+            const algoOpts = ALGOS.map((a, idx) => `<option value="${a.name}" ${idx === i % ALGOS.length ? 'selected' : ''}>${a.name}</option>`).join('');
+            agentDiv.innerHTML = `<strong>A${i+1}</strong> <select class="algo-picker">${algoOpts}</select>`;
             document.getElementById(`list-${i % tCount}`).appendChild(agentDiv);
         }
     }
 
-    function toggleModal(show) {
-        document.getElementById('modal').style.display = show ? 'block' : 'none';
-    }
+    function toggleModal(show) { document.getElementById('modal').style.display = show ? 'block' : 'none'; }
 
     function startSim() {
-        agents = [];
-        historyData = {};
+        agents = []; historyData = {};
         document.querySelectorAll('.team-zone').forEach((zone) => {
-            const teamName = zone.querySelector('.zone-title').innerText.trim();
-            const teamColor = zone.dataset.color;
-            historyData[teamName] = [0];
-            zone.querySelectorAll('.agent-card').forEach(card => {
-                agents.push({
-                    color: teamColor,
-                    team: teamName,
-                    algo: card.querySelector('.algo-picker').value,
-                    active: true, x: 0, y: 0, wins: 0
+            const teamName = zone.querySelector('.zone-title').innerText;
+            const teamColor = zone.querySelector('.swatch').style.background;
+            const teamList = zone.querySelectorAll('.agent-card');
+            if(teamList.length > 0) {
+                historyData[teamName] = [0];
+                teamList.forEach(card => {
+                    agents.push({
+                        color: teamColor, team: teamName,
+                        algo: card.querySelector('.algo-picker').value,
+                        active: true, x: 0, y: 0
+                    });
                 });
-            });
+            }
         });
 
         document.getElementById('setup').style.display = 'none';
@@ -195,23 +234,18 @@
     }
 
     function resizeCanvas() {
-        const c = document.getElementById('world');
-        const wrap = document.getElementById('canvas-wrap');
-        if(!c || !wrap) return;
-        c.width = wrap.clientWidth;
-        c.height = wrap.clientHeight;
+        const c = document.getElementById('world'), wrap = document.getElementById('canvas-wrap');
+        c.width = wrap.clientWidth; c.height = wrap.clientHeight;
     }
 
     function startRound() {
-        const c = document.getElementById('world');
-        const res = 6;
+        const c = document.getElementById('world'), res = 6;
         grid = Array(Math.floor(c.width/res)).fill().map(() => Array(Math.floor(c.height/res)).fill('#000'));
         timer = parseInt(document.getElementById('round-len').value) || 15;
         agents.forEach(a => {
-            a.active = true; // Restore everyone for the new round
+            a.active = true;
             a.x = Math.floor(Math.random() * grid.length);
             a.y = Math.floor(Math.random() * grid[0].length);
-            grid[a.x][a.y] = a.color;
         });
     }
 
@@ -223,39 +257,13 @@
             if (timer <= 0) knockout();
             lastTime = now;
         }
-        updateLogic();
-        render();
-        updateUI();
-
+        updateLogic(); render(); updateUI();
         const activeTeams = [...new Set(agents.filter(a => a.active).map(a => a.team))];
-        if (activeTeams.length === 1) {
-            recordWin(activeTeams[0]);
-            gen++;
-            startRound();
-        } else if (activeTeams.length === 0) {
-            startRound(); // Safeguard for draws
+        if (activeTeams.length <= 1) {
+            if(activeTeams[0]) recordWin(activeTeams[0]);
+            gen++; startRound();
         }
         requestAnimationFrame(loop);
-    }
-
-    function recordWin(teamName) {
-        for(let t in historyData) {
-            let lastVal = historyData[t][historyData[t].length - 1];
-            historyData[t].push(t === teamName ? lastVal + 1 : lastVal);
-        }
-    }
-
-    function batchSim(n) {
-        for(let i=0; i<n; i++) {
-            while([...new Set(agents.filter(a => a.active).map(a => a.team))].length > 1) {
-                updateLogic();
-                if (Math.random() > 0.985) knockout(); 
-            }
-            const active = agents.find(a => a.active);
-            if(active) recordWin(active.team);
-            gen++;
-            startRound();
-        }
     }
 
     function updateLogic() {
@@ -269,140 +277,68 @@
         });
     }
 
+    function recordWin(tn) {
+        for(let t in historyData) {
+            let lv = historyData[t][historyData[t].length - 1];
+            historyData[t].push(t === tn ? lv + 1 : lv);
+        }
+    }
+
     function knockout() {
         const counts = {};
-        // Count pixels for every color currently on the board
         grid.flat().forEach(c => { if(c !== '#000') counts[c] = (counts[c] || 0) + 1; });
-        
-        const teamCoverage = {};
-        agents.forEach(a => {
-            if(a.active) teamCoverage[a.team] = (teamCoverage[a.team] || 0) + (counts[a.color] || 0);
-        });
-        
-        let lowestVal = Infinity, loserTeam = null;
-        Object.entries(teamCoverage).forEach(([team, score]) => {
-            if(score < lowestVal) { lowestVal = score; loserTeam = team; }
-        });
-
-        if(loserTeam) {
-            // Identify the color associated with the losing team before deactivating them
-            const loserColor = agents.find(a => a.team === loserTeam).color;
-            
-            // Deactivate all agents on that team
-            agents.forEach(a => { if(a.team === loserTeam) a.active = false; });
-
-            // REMOVAL LOGIC: Wipe their color from the grid entirely
-            for(let x = 0; x < grid.length; x++) {
-                for(let y = 0; y < grid[0].length; y++) {
-                    if(grid[x][y] === loserColor) {
-                        grid[x][y] = '#000';
-                    }
-                }
-            }
+        let teamScores = {};
+        agents.forEach(a => { if(a.active) teamScores[a.team] = (teamScores[a.team] || 0) + (counts[a.color] || 0); });
+        let lowest = Infinity, loser = null;
+        Object.entries(teamScores).forEach(([t, s]) => { if(s < lowest) { lowest = s; loser = t; } });
+        if(loser) {
+            const lColor = agents.find(a => a.team === loser).color;
+            agents.forEach(a => { if(a.team === loser) a.active = false; });
+            for(let x=0; x<grid.length; x++) for(let y=0; y<grid[0].length; y++) if(grid[x][y] === lColor) grid[x][y] = '#000';
         }
-        
-        // Reset the timer for the remaining survivors
         timer = parseInt(document.getElementById('round-len').value);
     }
 
     function render() {
-        const canvas = document.getElementById('world');
-        const ctx = canvas.getContext('2d');
+        const canvas = document.getElementById('world'), ctx = canvas.getContext('2d');
         const cw = canvas.width / grid.length, ch = canvas.height / grid[0].length;
         ctx.fillStyle = '#000'; ctx.fillRect(0,0,canvas.width,canvas.height);
         for(let x=0; x<grid.length; x++) {
-            for(let y=0; y<grid[0].length; y++) {
-                if(grid[x][y] !== '#000') {
-                    ctx.fillStyle = grid[x][y];
-                    ctx.fillRect(x*cw, y*ch, cw, ch);
-                }
-            }
+            grid[x].forEach((cell, y) => {
+                if(cell !== '#000') { ctx.fillStyle = cell; ctx.fillRect(x*cw, y*ch, cw, ch); }
+            });
         }
     }
 
     function updateUI() {
-        const counts = {}; grid.flat().forEach(c => { if(c!=='#000') counts[c] = (counts[c]||0)+1; });
-        const liveEntries = agents.filter(a => a.active).map(a => ({
-            color: a.color, algo: a.algo, score: counts[a.color] || 0
-        })).sort((a,b) => b.score - a.score);
-
-        document.getElementById('live-board').innerHTML = liveEntries.map(e => `
-            <div class="entry"><span class="entry-label"><span class="swatch" style="background:${e.color}"></span><span>${e.algo}</span></span><span>${e.score}</span></div>
+        document.getElementById('live-board').innerHTML = agents.filter(a => a.active).map(a => `
+            <div class="entry"><span><span class="swatch" style="background:${a.color}"></span> ${a.algo}</span></div>
         `).join('');
-
-        const perfData = Object.entries(historyData).map(([name, history]) => ({
-            name, wins: history[history.length-1], color: agents.find(a => a.team === name).color, algo: agents.find(a => a.team === name).algo
-        })).sort((a,b) => b.wins - a.wins);
-
-        document.getElementById('legacy-board').innerHTML = perfData.map(p => `
-            <div class="entry"><span class="entry-label">${isFFA ? `<span class="swatch" style="background:${p.color}"></span><span>${p.algo}</span>` : `<span>${p.name}</span>`}</span><span>${p.wins}</span></div>
-        `).join('');
+        document.getElementById('legacy-board').innerHTML = Object.entries(historyData).map(([n, h]) => `
+            <div class="entry"><span>${n}</span> <span>${h[h.length-1]}</span></div>
+        `).sort((a,b) => b.wins - a.wins).join('');
     }
 
     function showEndScreen() {
-    isRunning = false;
-    document.getElementById('sim').style.display = 'none';
-    document.getElementById('end-screen').style.display = 'flex';
-    const ctx = document.getElementById('winChart').getContext('2d');
-    
-    const labels = Array.from({length: historyData[Object.keys(historyData)[0]].length}, (_, i) => i);
-    
-    const datasets = Object.keys(historyData).map(teamName => {
-        const teamAgents = agents.filter(a => a.team === teamName);
-        const teamColor = teamAgents[0].color;
-        
-        // Build the label based on mode
-        let displayLabel;
-        if (isFFA) {
-            // FFA Mode: "Algorithm"
-            displayLabel = teamAgents[0].algo;
-        } else {
-            // Team Mode: "Team Name: Algo1: Algo2..."
-            const algos = teamAgents.map(a => a.algo).join(': ');
-            displayLabel = `${teamName}: ${algos}`;
-        }
-
-        return {
-            label: displayLabel,
-            data: historyData[teamName],
-            borderColor: teamColor,
-            backgroundColor: teamColor, // Added for the legend swatch
-            tension: 0.2, 
-            pointRadius: 0
-        };
-    });
-
-    // Cleanup old chart instance if it exists to prevent flickering
-    if (window.myChart) window.myChart.destroy();
-
-    window.myChart = new Chart(ctx, {
-        type: 'line', 
-        data: { labels, datasets },
-        options: {
-            responsive: true, 
-            maintainAspectRatio: false,
-            scales: { 
-                x: { ticks: { color: '#888', font: { size: 8 } }, grid: { display: false } },
-                y: { ticks: { color: '#888', font: { size: 8 } }, grid: { color: '#222' } }
+        isRunning = false;
+        document.getElementById('sim').style.display = 'none';
+        document.getElementById('end-screen').style.display = 'flex';
+        const ctx = document.getElementById('winChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: Array.from({length: historyData[Object.keys(historyData)[0]].length}, (_, i) => i),
+                datasets: Object.keys(historyData).map(t => ({
+                    label: t, data: historyData[t], borderColor: agents.find(a => a.team === t).color, tension: 0.1
+                }))
             },
-            plugins: { 
-                legend: { 
-                    display: true, // Always show legend now
-                    position: 'bottom',
-                    labels: { 
-                        color: '#fff', 
-                        font: { size: 7 },
-                        boxWidth: 10,
-                        padding: 10
-                    } 
-                } 
-            }
-        }
-    });
-}
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+    }
+
+    function batchSim(n) { for(let i=0; i<n; i++) knockout(); }
 
     window.onload = initSetup;
-    window.onresize = resizeCanvas;
 </script>
 </body>
 </html>
